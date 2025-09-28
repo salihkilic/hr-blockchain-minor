@@ -1,1 +1,1 @@
-# hr-blockchain-minor
+# Betterchain (aslo known as Goodchain)
