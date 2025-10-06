@@ -2,13 +2,7 @@ from textual.app import App, ComposeResult
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder
 
-from UI.Widgets.BlockchainExplorer import BlockchainExplorer
-
-
-class BlockchainExplorerScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield BlockchainExplorer()
-        yield Footer()
+from UI.Screens.BlockchainExplorer import BlockchainExplorer
 
 
 class UserDashboardScreen(Screen):
@@ -17,22 +11,14 @@ class UserDashboardScreen(Screen):
         yield Footer()
 
 
-class DebugScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield Placeholder("Debug screen")
-        yield Footer()
-
-
 class BlockchainApp(App):
     BINDINGS = [
         ("b", "switch_mode('blockchain_explorer')", "Blockchain Explorer"),
         ("u", "switch_mode('user_dashboard')", "User Dashboard"),
-        ("d", "switch_mode('debug_screen')", "Debug Screen"),
     ]
     MODES = {
-        "blockchain_explorer": BlockchainExplorerScreen,
+        "blockchain_explorer": BlockchainExplorer,
         "user_dashboard": UserDashboardScreen,
-        "debug_screen": DebugScreen,
     }
 
     def on_mount(self) -> None:
