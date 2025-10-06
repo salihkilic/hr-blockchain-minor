@@ -62,6 +62,7 @@ class ChainOverview(Static):
         self._refresh_text()
 
     # Public API
+    # TODO SK: Use these methods to manipulate the underlying data until we have a proper data binding system
     def update_metrics(
         self,
         total_blocks: int | None = None,

@@ -186,6 +186,7 @@ class BlockchainExplorer(Screen):
                 ))
 
     # --- Public API (delegating to widgets) ---
+    # TODO SK: Use these methods to manipulate the underlying data until we have a proper data binding system
     def update_chain_overview(self, total_blocks: int, total_tx: int, status: str) -> None:
         if self.chain_overview:
             self.chain_overview.update_metrics(total_blocks=total_blocks, total_tx=total_tx, status=status)
@@ -194,7 +195,8 @@ class BlockchainExplorer(Screen):
         if self.block_list:
             self.block_list.add_block(block_id, timestamp, tx_count, status)
 
-    def add_pending_transaction(self, tx_id: str, sender: str, receiver: str, value: float, fee: float, validity: str) -> None:
+    def add_pending_transaction(self, tx_id: str, sender: str, receiver: str, value: float, fee: float,
+                                validity: str) -> None:
         if self.pending_pool:
             self.pending_pool.add_transaction(PendingTx(tx_id, sender, receiver, value, fee, validity))
 
@@ -212,7 +214,7 @@ class BlockchainExplorer(Screen):
         demo = BlockInfo(
             block_id=message.block_id,
             hash=f"hash_{message.block_id:04}",
-            prev_hash=f"hash_{message.block_id-1:04}" if message.block_id > 0 else "0" * 8,
+            prev_hash=f"hash_{message.block_id - 1:04}" if message.block_id > 0 else "0" * 8,
             nonce=12345 + message.block_id,
             tx_count=5 + message.block_id,
             flags=3 if message.block_id % 2 else 1,
@@ -224,7 +226,8 @@ class BlockchainExplorer(Screen):
         if self.transaction_details:
             self.transaction_details.clear()
 
-    def on_pending_pool_transaction_selected(self, message: PendingPool.TransactionSelected) -> None:  # Transaction selected
+    def on_pending_pool_transaction_selected(self,
+                                             message: PendingPool.TransactionSelected) -> None:  # Transaction selected
         demo = TransactionInfo(
             tx_id=message.tx_id,
             sender="alice",

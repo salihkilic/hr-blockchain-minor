@@ -50,7 +50,7 @@ class BlockList(Widget):
             self.table.add_columns("ID", "Timestamp", "Tx Count", "Status")
 
     # Public API
-    # TODO SK: Use these methods to manipulate the block list table until we have a proper data binding system
+    # TODO SK: Use these methods to manipulate the underlying data until we have a proper data binding system
     def add_block(self, block_id: int, timestamp: str, tx_count: int, status: str) -> None:
         self.table.add_row(str(block_id), timestamp, str(tx_count), status)
 

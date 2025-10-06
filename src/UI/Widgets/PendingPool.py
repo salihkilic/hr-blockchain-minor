@@ -59,6 +59,7 @@ class PendingPool(Widget):
             self.table.add_columns("Tx ID", "From", "To", "Value", "Fee", "Validity")
 
     # Public API
+    # TODO SK: Use these methods to manipulate the underlying data until we have a proper data binding system
     def add_transaction(self, tx: PendingTx) -> None:
         self.table.add_row(tx.tx_id, tx.sender, tx.receiver, str(tx.value), str(tx.fee), tx.validity)
 

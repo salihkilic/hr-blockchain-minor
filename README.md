@@ -17,3 +17,7 @@ And your app in another terminal window with:
 Some nice links:
 - [Textual Documentation](https://textual.textualize.io/)
 - [Textual Widgets](https://textual.textualize.io/widget_gallery/)
+- [Video Tutorials](https://www.youtube.com/@Textualize)
+- Examples:
+  - [Textual Examples (How-To)](https://github.com/Textualize/textual/tree/main/docs/examples)
+  - [Textual Examples (Demos)](https://github.com/Textualize/textual/tree/main/examples)

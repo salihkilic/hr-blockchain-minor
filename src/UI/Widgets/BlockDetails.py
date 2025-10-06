@@ -76,6 +76,7 @@ class BlockDetails(Static):
         return "\n".join(parts)
 
     # Public API
+    # TODO SK: Use these methods to manipulate the underlying data until we have a proper data binding system
     def set_block(self, info: BlockInfo) -> None:
         self.info = info
 

@@ -68,6 +68,7 @@ class TransactionDetails(Static):
         return "\n".join(parts)
 
     # Public API
+    # TODO SK: Use these methods to manipulate the underlying data until we have a proper data binding system
     def set_transaction(self, info: TransactionInfo) -> None:
         self.info = info
 
