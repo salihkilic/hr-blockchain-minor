@@ -1,0 +1,13 @@
+.container{
+    padding: 1 2;
+}
+
+.column{
+    border: solid
+}
+
+.column-header{
+    width: 100%;
+    text-align: center;
+    text-style: bold;
+}

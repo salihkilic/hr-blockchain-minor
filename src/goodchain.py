@@ -1,8 +1,5 @@
-from datetime import datetime
-
-from textual.app import App, ComposeResult
-from textual.widgets import Digits
+from UI.GoodchainApp import GoodchainApp
 
 if __name__ == "__main__":
-    app = ClockApp()
+    app = GoodchainApp()
     app.run()

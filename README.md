@@ -1,1 +1,2 @@
-# Betterchain (aslo known as Goodchain)
+# Goodchain
+
