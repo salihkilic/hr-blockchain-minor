@@ -7,6 +7,7 @@ from textual.widgets import Label, ListView, ListItem
 class LiveTransactionPool(Widget):
 
     def compose(self) -> ComposeResult:
+
         yield Label("Live transaction pool", classes="column-header")
         yield ListView(
             ListItem(Label("One")),
@@ -17,6 +18,7 @@ class LiveTransactionPool(Widget):
     def _demo_generate_random_transactions(self):
         amount = 15
         transactions = []
-        # format amount from hash to hash
+        # format amount from hash to
         for i in range(amount):
-            transactions.append(f"tx_{i}: {i*10} GC")
+            random_number = "0x" + "".join(["%x" % __import__("random").randint(0, 15) for _ in range(64)])
+            transactions.append(f"tx_{random_number}: {i*10} GC")
