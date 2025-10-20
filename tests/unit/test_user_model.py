@@ -1,4 +1,5 @@
 import re
+import logging
 from src.Models import User
 
 
@@ -9,6 +10,12 @@ def test_create_sets_expected_fields():
     assert "-----BEGIN PUBLIC KEY-----" in u.public_key
     assert "-----BEGIN PRIVATE KEY-----" in u.private_key
     assert isinstance(u.created_at, str)
+
+    # Extra: log the created user details for manual debugging
+    logger = logging.getLogger("unit_tests")
+    logger.info(f"Created user: {u.username}")
+    for field in u.to_dict(include_private=True):
+        logger.info(f"  {field}: {u.to_dict(include_private=True)[field]}")
 
 
 def test_verify_password_ok_and_fail():
