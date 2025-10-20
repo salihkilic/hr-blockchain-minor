@@ -14,6 +14,7 @@ class DifficultyConfig:
     max_difficulty: int = 16
     window_size: int = 3         # number of recent samples to average
     step_limit: int = 1          # Max step change per update (usually 1)
+    default_difficulty: int = 2  # Starting difficulty
 
 
 @dataclass
@@ -30,22 +31,24 @@ class Difficulty:
 
     cfg = DifficultyConfig()
     state = DifficultyState(times=deque(maxlen=cfg.window_size))
+    current_difficulty = cfg.default_difficulty
 
     @classmethod
-    def update(cls, mining_time: float) -> None:
+    def update_time_to_mine(cls, mining_time: float) -> None:
         if math.isfinite(mining_time) and mining_time > 0:
             cls.state.times.append(mining_time)
+            cls.current_difficulty = cls._calculate_difficulty()
 
     @classmethod
-    def current_difficulty(cls, prev_difficulty: int) -> int:
+    def _calculate_difficulty(cls) -> int:
         avg = cls._avg_time()
         if avg is None:
-            return prev_difficulty
+            return cls.current_difficulty
         if avg < cls.cfg.min_time:
-            return min(cls.cfg.max_difficulty, prev_difficulty + cls.cfg.step_limit)
+            return min(cls.cfg.max_difficulty, cls.current_difficulty + cls.cfg.step_limit)
         if avg > cls.cfg.max_time:
-            return max(cls.cfg.min_difficulty, prev_difficulty - cls.cfg.step_limit)
-        return prev_difficulty
+            return max(cls.cfg.min_difficulty, cls.current_difficulty - cls.cfg.step_limit)
+        return cls.current_difficulty
 
     @classmethod
     def _avg_time(cls) -> Optional[float]:
