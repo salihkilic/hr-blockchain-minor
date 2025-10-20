@@ -3,11 +3,8 @@ from textual.screen import Screen
 from textual.widgets import Footer, Placeholder
 from .Database import Database  # Initialize DB on app startup
 
-
-class UserDashboardScreen(Screen):
-    def compose(self) -> ComposeResult:
-        yield Placeholder("User Dashboard")
-        yield Footer()
+from UI.Screens.User.UserLoginScreen import UserLoginScreen
+from UI.Screens.User.UserDashboardScreen import UserDashboardScreen
 
 class BlockchainExplorer(Screen):
     def compose(self) -> ComposeResult:
@@ -24,6 +21,7 @@ class BlockchainApp(App):
         "blockchain_explorer": BlockchainExplorer,
         "user_dashboard": UserDashboardScreen,
     }
+    SCREENS = {"login_screen": UserLoginScreen}
 
     def on_mount(self) -> None:
         # Initialize the user database once at app startup
