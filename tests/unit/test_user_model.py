@@ -1,0 +1,48 @@
+import re
+from src.Models import User
+
+
+def test_create_sets_expected_fields():
+    u = User.create("alice", "s3cret")
+    assert u.username == "alice"
+    assert u.key_type == "ed25519-pem"
+    assert "-----BEGIN PUBLIC KEY-----" in u.public_key
+    assert "-----BEGIN PRIVATE KEY-----" in u.private_key
+    assert isinstance(u.created_at, str)
+
+
+def test_verify_password_ok_and_fail():
+    u = User.create("bob", "p@ssw0rd")
+    assert u.verify_password("p@ssw0rd") is True
+    assert u.verify_password("wrong") is False
+
+
+def test_address_is_sha256_of_public_key():
+    u = User.create("carol", "pw")
+    # address must be a 64-char hex string
+    assert re.fullmatch(r"[0-9a-f]{64}", u.address)
+
+
+def test_sign_and_verify_success_and_failure():
+    u = User.create("dave", "pw")
+    msg = b"hello-goodchain"
+    sig = u.sign(msg)
+    assert isinstance(sig, str) and len(sig) > 0
+    assert u.verify(msg, sig) is True
+    assert u.verify(b"tampered", sig) is False
+
+
+def test_to_from_dict_roundtrip_with_and_without_private_key():
+    u = User.create("erin", "pw")
+    as_public = u.to_dict(include_private=False)
+    assert "private_key" not in as_public
+
+    as_private = u.to_dict(include_private=True)
+    assert "private_key" in as_private
+
+    u2 = User.from_dict(as_private)
+    assert u2.username == u.username
+    assert u2.public_key == u.public_key
+    assert u2.private_key == u.private_key
+    assert u2.verify_password("pw")
+
