@@ -1,6 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder
+from .Database import Database  # Initialize DB on app startup
 
 
 class UserDashboardScreen(Screen):
@@ -25,6 +26,11 @@ class BlockchainApp(App):
     }
 
     def on_mount(self) -> None:
+        # Initialize the user database once at app startup
+        self.db = Database()
+        self.db.connect()
+        self.db.init_schema()
+        # Switch to default mode
         self.switch_mode("blockchain_explorer")
 
 
