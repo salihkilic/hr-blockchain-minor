@@ -1,27 +1,27 @@
-from textual.app import App, ComposeResult
-from textual.screen import Screen
-from textual.widgets import Footer, Placeholder
-from .Database import Database  # Initialize DB on app startup
+from textual.app import App
+from Database.sqlite_client import Database  # Initialize DB on app startup
+from UI.Screens.Blockchain import BlockchainExplorerScreen
+from UI.Screens.User import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
 
-from UI.Screens.User.UserLoginScreen import UserLoginScreen
-from UI.Screens.User.UserDashboardScreen import UserDashboardScreen
 
-class BlockchainExplorer(Screen):
-    def compose(self) -> ComposeResult:
-        yield Placeholder("Blockchain Explorer")
-        yield Footer()
+
 
 
 class BlockchainApp(App):
+    CSS_PATH = "Textual.tcss"
+
     BINDINGS = [
         ("b", "switch_mode('blockchain_explorer')", "Blockchain Explorer"),
         ("u", "switch_mode('user_dashboard')", "User Dashboard"),
     ]
     MODES = {
-        "blockchain_explorer": BlockchainExplorer,
+        "blockchain_explorer": BlockchainExplorerScreen,
         "user_dashboard": UserDashboardScreen,
     }
-    SCREENS = {"login_screen": UserLoginScreen}
+    SCREENS = {
+        "login_screen": UserLoginScreen,
+        "register_screen": UserRegisterScreen
+    }
 
     def on_mount(self) -> None:
         # Initialize the user database once at app startup

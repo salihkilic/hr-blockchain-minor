@@ -1,0 +1,18 @@
+Screen {
+  align: center middle;
+}
+
+Input {
+  margin-bottom: 1;
+  border: heavy $accent;
+}
+
+Button {
+  content-align: center middle;
+  border: heavy $accent;
+}
+
+.button-row{
+    layout: horizontal;
+    content-align: center middle;
+}

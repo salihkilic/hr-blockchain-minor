@@ -3,7 +3,7 @@ import pytest
 @pytest.mark.e2e
 def test_app_import_and_modes():
     # Importing here avoids importing textual unless running this test
-    from src.main import BlockchainApp, BlockchainExplorer, UserDashboardScreen
+    from src.goodchain import BlockchainApp, BlockchainExplorer, UserDashboardScreen
 
     # Assert modes are wired correctly without running the app
     assert isinstance(BlockchainApp.MODES, dict)

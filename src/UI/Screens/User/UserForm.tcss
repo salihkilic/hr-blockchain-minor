@@ -1,0 +1,11 @@
+.form {
+  width: 100%;
+  padding: 2;
+  border: round $accent;
+  background: $surface;
+}
+
+.title {
+  padding-bottom: 1;
+  content-align: center middle;
+}
