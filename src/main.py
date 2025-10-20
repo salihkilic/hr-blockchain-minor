@@ -2,12 +2,15 @@ from textual.app import App, ComposeResult
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder
 
-from UI.Screens.BlockchainExplorer import BlockchainExplorer
-
 
 class UserDashboardScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Placeholder("User Dashboard")
+        yield Footer()
+
+class BlockchainExplorer(Screen):
+    def compose(self) -> ComposeResult:
+        yield Placeholder("Blockchain Explorer")
         yield Footer()
 
 
