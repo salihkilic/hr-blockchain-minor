@@ -7,18 +7,6 @@ from UI.Widgets.Blockchain import BlockInfoWidget
 
 
 class BlockchainExplorerScreen(Screen):
-    CSS = """
-        .container{
-            padding: 1 2;
-        }
-        
-        .column{
-            border: solid $accent;
-            border-title-align: center;
-        }
-
-    """
-
     def compose(self) -> ComposeResult:
         column_user_info = Vertical(
             Placeholder("User Info"),

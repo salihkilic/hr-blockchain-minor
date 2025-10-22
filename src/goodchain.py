@@ -8,11 +8,10 @@ from UI.Screens.User import UserDashboardScreen, UserLoginScreen, UserRegisterSc
 
 
 class BlockchainApp(App):
-    CSS_PATH = "Textual.tcss"
 
     BINDINGS = [
         ("b", "switch_mode('blockchain_explorer')", "Blockchain Explorer"),
-        ("u", "switch_mode('user_dashboard')", "User Dashboard"),
+        ("u", "switch_mode('user_dashboard')", "User Dashboard")
     ]
     MODES = {
         "blockchain_explorer": BlockchainExplorerScreen,
