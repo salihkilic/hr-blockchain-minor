@@ -1,1 +1,3 @@
 from .BlockInfoWidget import BlockInfoWidget
+from .TransactionPoolWidget import TransactionPoolWidget
+from .TransactionListingWidget import TransactionListingWidget

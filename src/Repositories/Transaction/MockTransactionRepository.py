@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from Models import Transaction
 from Models.Enum import TransactionType
 from Repositories.Transaction.ITransactionRepository import ITransactionRepository
@@ -12,11 +14,30 @@ class MockTransactionRepository(ITransactionRepository):
 
         for _ in range(random_length):
             txs.append(Transaction(
-                tx_id=Faker().sha256(),
-                sender=Faker().name(),
-                receiver=Faker().name(),
-                amount=Faker().random_number(digits=2),
-                tx_type=TransactionType.REWARD if _ == 3 else TransactionType.NORMAL
+                txid=Faker().sha256(),
+                receiver_address=Faker().uuid4(),
+                sender_address=Faker().uuid4(),
+                fee=Decimal(Faker().pyfloat(1, 2, positive=True)),
+                amount=Decimal(Faker().pyfloat(2, 2, positive=True)),
+                version=1
             ))
 
         return txs
+
+    def find_in_transaction_pool(self) -> list[Transaction]:
+        txs = list()
+
+        random_length = Faker().random_int(min=10, max=25)
+
+        for _ in range(random_length):
+            txs.append(Transaction(
+                txid=Faker().sha256(),
+                receiver_address=Faker().uuid4(),
+                sender_address=Faker().uuid4(),
+                fee=Decimal(Faker().pyfloat(1, 2, positive=True)),
+                amount=Decimal(Faker().pyfloat(2, 2, positive=True)),
+                version=1
+            ))
+
+        return txs
+

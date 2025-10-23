@@ -3,10 +3,6 @@ from Database.sqlite_client import Database  # Initialize DB on app startup
 from UI.Screens.Blockchain import BlockchainExplorerScreen
 from UI.Screens.User import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
 
-
-
-
-
 class BlockchainApp(App):
 
     BINDINGS = [

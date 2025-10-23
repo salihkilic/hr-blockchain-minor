@@ -3,7 +3,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
-from UI.Widgets.Blockchain import BlockInfoWidget
+from UI.Widgets.Blockchain import BlockInfoWidget, TransactionPoolWidget
 
 
 class BlockchainExplorerScreen(Screen):
@@ -22,7 +22,7 @@ class BlockchainExplorerScreen(Screen):
 
 
         column_transaction_pool = Vertical(
-            Placeholder("Transaction Pool"),
+            TransactionPoolWidget(),
             classes="column"
         )
         column_transaction_pool.border_title = "Transaction Pool"
