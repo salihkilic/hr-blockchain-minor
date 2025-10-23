@@ -1,0 +1,11 @@
+.title {
+  margin: 2 4;
+}
+
+Input {
+  margin: 2 4;
+}
+
+Button {
+  margin: 0 2 0 4;
+}

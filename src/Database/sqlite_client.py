@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from typing import Optional, List
-from src.Models import User
+from Models import User
 
 
 class DuplicateUsernameError(Exception):
