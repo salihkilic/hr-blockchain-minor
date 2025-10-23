@@ -1,3 +1,4 @@
 from .user import User
 from .block import Block, ValidationFlag
-from .Transaction import Transaction
+from .transaction import Transaction
+from .wallet import Wallet
