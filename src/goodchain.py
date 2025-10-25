@@ -1,7 +1,7 @@
 from textual.app import App
-from Database.sqlite_client import Database  # Initialize DB on app startup
-from UI.Screens.Blockchain import BlockchainExplorerScreen
-from UI.Screens.User import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
+from database_scripts.sqlite_client import Database  # Initialize DB on app startup
+from ui.screens.blockchain import BlockchainExplorerScreen
+from ui.screens.user import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
 
 class BlockchainApp(App):
 

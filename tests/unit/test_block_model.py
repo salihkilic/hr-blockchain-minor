@@ -1,6 +1,6 @@
 import re
 import pytest
-from src.Models import Block, ValidationFlag
+from models import Block, ValidationFlag
 
 
 def make_block(id=0, prev="0"*64, n_tx=5, miner=None):

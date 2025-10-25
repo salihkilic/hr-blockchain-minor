@@ -1,6 +1,6 @@
 import re
 import logging
-from src.Models import User
+from models import User
 
 
 def test_create_sets_expected_fields():

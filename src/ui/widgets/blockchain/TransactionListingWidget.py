@@ -5,7 +5,7 @@ from textual.containers import Vertical, Horizontal, VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Input
 
-from Models import Transaction
+from models import Transaction
 
 
 class TransactionListingWidget(Widget):

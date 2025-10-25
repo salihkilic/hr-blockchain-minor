@@ -1,7 +1,7 @@
 import re
 from decimal import Decimal
 
-from src.Models import User, Transaction
+from models import User, Transaction
 
 
 def make_user(name: str) -> User:

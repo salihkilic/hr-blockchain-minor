@@ -1,11 +1,11 @@
 from decimal import Decimal
 
-from Models import Transaction
-from Models.Enum import TransactionType
-from Repositories.Transaction.ITransactionRepository import ITransactionRepository
+from models import Transaction
+from models.enum import TransactionType
+from repositories.transaction.AbstractTransactionRepository import AbstractTransactionRepository
 from faker import Faker
 
-class MockTransactionRepository(ITransactionRepository):
+class MockTransactionRepository(AbstractTransactionRepository):
 
     def find_by_block_id(self, block_id: int) -> list[Transaction]:
         txs = list()

@@ -3,11 +3,11 @@ from textual.containers import Vertical, Horizontal, VerticalScroll, Container
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
-from Repositories.Transaction import MockTransactionRepository
+from repositories.transaction import MockTransactionRepository
 from .TransactionListingWidget import TransactionListingWidget
 
 
-class TransactionPoolWidget(Widget):
+class BlockInfoWidget(Widget):
     DEFAULT_CSS = """
             .button_col {
                 height: auto;
@@ -32,12 +32,25 @@ class TransactionPoolWidget(Widget):
         super().__init__()
 
     def compose(self) -> ComposeResult:
+        visible_block = 23
 
-        txs = self.TransactionRepository.find_in_transaction_pool()
+        txs = self.TransactionRepository.find_by_block_id(visible_block)
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         yield Vertical(
-            Label(f"Transaction pool", classes="block__title"),
+            Label(f"Block nr: {visible_block}", classes="block__title"),
+            Vertical(
+                Horizontal(
+                    Button("Previous", classes="button"),
+                    Button("Next", classes="button", disabled=True),
+                    classes="button_col"
+                ),
+                Horizontal(
+                    Button("Mine block", classes="button", disabled=True),
+                    classes="button_col"
+                ),
+                classes="button_row"
+            ),
             VerticalScroll(
                 *txs_widgets,
                 classes="transactions_scroll"

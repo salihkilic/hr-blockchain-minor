@@ -1,5 +1,5 @@
 from decimal import Decimal
-from src.Models import User, Transaction, Wallet
+from models import User, Transaction, Wallet
 
 
 def mk_user(name: str) -> User:

@@ -1,6 +1,6 @@
 from collections import deque
 
-from src.Services.difficulty import Difficulty, DifficultyConfig, DifficultyState
+from services.difficulty import Difficulty, DifficultyConfig, DifficultyState
 
 
 def reset(cfg: DifficultyConfig | None = None) -> None:

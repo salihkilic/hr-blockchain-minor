@@ -3,7 +3,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
-from UI.Widgets.Blockchain import BlockInfoWidget, TransactionPoolWidget
+from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget
 
 
 class BlockchainExplorerScreen(Screen):
