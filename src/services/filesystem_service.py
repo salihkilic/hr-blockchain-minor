@@ -5,24 +5,25 @@ from exceptions import RequestedDirectoryDoesNotExistException, RequestedFileDoe
 
 class FileSystemService:
 
-    def get_src_root(self, create_if_missing: bool = True) -> str:
+    def get_src_root(self) -> str:
         """ Returns the absolute path to the 'src' directory of the project. """
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         data_root = os.path.join(repo_root, "src")
-        if create_if_missing and not self.validate_directory_exists(data_root):
-            os.makedirs(data_root)
-        else:
-            raise RequestedDirectoryDoesNotExistException(f"Data root directory does not exist: {data_root}")
+        if not self.validate_directory_exists(data_root):
+            raise RequestedDirectoryDoesNotExistException(f"Src root directory does not exist: {data_root}")
         return data_root
 
     def get_data_root(self, create_if_missing: bool = True) -> str:
         """ Returns the absolute path to the 'data' directory of the project. """
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         data_root = os.path.join(repo_root, "data")
-        if create_if_missing and not self.validate_directory_exists(data_root):
-            os.makedirs(data_root)
-        else:
-            raise RequestedDirectoryDoesNotExistException(f"Data root directory does not exist: {data_root}")
+
+        if not self.validate_directory_exists(data_root):
+            if create_if_missing:
+                os.makedirs(data_root)
+            else:
+                raise RequestedDirectoryDoesNotExistException(f"Data root directory does not exist: {data_root}")
+
         return data_root
 
     def validate_file_exists(self, file_path: str, throw_exception: bool = False) -> bool:
@@ -45,17 +46,37 @@ class FileSystemService:
         """ Returns the absolute path to the specified database file within the data directory. Throws an exception if the data directory does not exist. """
         data_root = self.get_data_root()
         db_path = os.path.join(data_root, db_filename)
-        if create_if_missing and not os.path.exists(data_root):
-            os.makedirs(data_root)
-        else:
-            raise RequestedFileDoesNotExistException(f"File does not exist: {data_root}")
+        if not os.path.exists(db_path):
+            if create_if_missing:
+                self.create_file(db_path)
+            else:
+                raise RequestedFileDoesNotExistException(f"File does not exist: {db_path}")
         return db_path
 
-    def get_sql_file_path(self, sql_filename: str, create_if_missing: bool = True) -> str:
+    def get_sql_file_path(self, sql_filename: str) -> str:
         """ Returns the absolute path to the specified SQL file within the src/DatabaseScripts directory. Throws an exception if the directory does not exist. """
         src_root = self.get_src_root()
-        sql_dir = os.path.join(src_root, "DatabaseScripts")
+        sql_dir = os.path.join(src_root, "database_scripts")
         self.validate_directory_exists(sql_dir, throw_exception=True)
         sql_path = os.path.join(sql_dir, sql_filename)
         self.validate_file_exists(sql_path, throw_exception=True)
         return sql_path
+
+    def create_file(self, file_path: str):
+        """ Creates a file """
+        file_path = os.path.abspath(file_path)
+        directory = os.path.dirname(file_path)
+
+        if not os.path.isdir(directory):
+            raise RequestedDirectoryDoesNotExistException(
+                f"Directory does not exist: {directory}"
+            )
+
+        if os.path.exists(file_path):
+           return
+
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                pass
+        except Exception as e:
+            raise IOError(f"Failed to create file: {file_path}") from e

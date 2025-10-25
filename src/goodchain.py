@@ -1,5 +1,6 @@
 from textual.app import App
-from database_scripts.sqlite_client import Database  # Initialize DB on app startup
+
+from repositories.user import UserRepository
 from ui.screens.blockchain import BlockchainExplorerScreen
 from ui.screens.user import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
 
@@ -19,11 +20,9 @@ class BlockchainApp(App):
     }
 
     def on_mount(self) -> None:
-        # Initialize the user database once at app startup
-        self.db = Database()
-        self.db.connect()
-        self.db.init_schema()
-        # Switch to default mode
+        user_repository = UserRepository()
+        user_repository.setup_database_structure()
+
         self.switch_mode("blockchain_explorer")
 
 

@@ -1,9 +1,10 @@
 from decimal import Decimal
 
 from models import Transaction
-from models.enum import TransactionType
-from repositories.transaction.AbstractTransactionRepository import AbstractTransactionRepository
 from faker import Faker
+
+from repositories.transaction import AbstractTransactionRepository
+
 
 class MockTransactionRepository(AbstractTransactionRepository):
 

@@ -11,7 +11,7 @@ from services import FileSystemService
 #  - Centralize duplicate try exception handling
 class UserRepository(AbstractUserRepository, DatabaseConnection):
 
-    def __init__(self, db_path: str = ""):
+    def __init__(self, db_path: Optional[str] = None):
         super().__init__(db_path)
 
         # Injected services
@@ -20,8 +20,8 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
     def setup_database_structure(self) -> None:
         self._db_connect()
 
-        user_table_script = self.FileSystemService.get_db_file_path("create_user_table.sql")
-        meta_table_script = self.FileSystemService.get_db_file_path("create_meta_table.sql")
+        meta_table_script = self.FileSystemService.get_sql_file_path("create_meta_table.sql")
+        user_table_script = self.FileSystemService.get_sql_file_path("create_user_table.sql")
 
         with open(user_table_script, 'r') as sql_file:
             user_sql_script = sql_file.read()
@@ -67,7 +67,7 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                 ),
             )
             self._db_connection.commit()
-        except sqlite3.InternalError:
+        except sqlite3.IntegrityError:
             self._db_close()
             raise DuplicateUsernameException(f"Username '{user.username}' already exists.")
 
@@ -96,6 +96,8 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
             self._db_close()
             raise e
 
+        self._db_close()
+
         return self.hydrate(row) if row else None
 
 
@@ -123,6 +125,8 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
         except Exception as e:
             self._db_close()
             raise e
+
+        self._db_close()
 
         return [self.hydrate(row) for row in rows]
 

@@ -1,2 +1,2 @@
-from .ITransactionRepository import ITransactionRepository
-from .MockTransactionRepository import MockTransactionRepository
+from .abstract_transaction_repository import AbstractTransactionRepository
+from .mock_transaction_repository import MockTransactionRepository

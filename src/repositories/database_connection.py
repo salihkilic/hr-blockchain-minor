@@ -1,5 +1,6 @@
 import sqlite3
 from abc import abstractmethod
+from typing import Optional
 
 from exceptions import RequestedFileDoesNotExistException
 from services import FileSystemService
@@ -7,14 +8,15 @@ from services import FileSystemService
 
 class DatabaseConnection:
 
-    def __init__(self, db_path: str = ""):
+    def __init__(self, db_path: Optional[str] = None):
         # Injected services
         self.FileSystemService = FileSystemService()
 
         if db_path is not None:
             self.FileSystemService.validate_file_exists(db_path, throw_exception=True)
+        else:
+            db_path = self.FileSystemService.get_db_file_path("users.sqlite3")
 
-        db_path = self.FileSystemService.get_db_file_path("users.sqlite3")
         self.db_path = db_path
         self._db_connection: sqlite3.Connection | None = None
 

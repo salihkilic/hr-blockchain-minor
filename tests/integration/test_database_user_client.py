@@ -9,6 +9,10 @@ from exceptions.user import DuplicateUsernameException
 
 def _initialize_test_db(tmp_path):
     db_path = os.path.join(tmp_path, "users.sqlite3")
+
+    # Create the empty DB file
+    open(db_path, 'a').close()
+
     user_repository = UserRepository(db_path=db_path)
     user_repository.setup_database_structure()
     return db_path, user_repository
