@@ -6,6 +6,7 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Input
 
 from models import Transaction
+from ui.screens.blockchain.TransactionDetailScreen import TransactionDetailScreen
 
 
 class TransactionListingWidget(Widget):
@@ -36,11 +37,11 @@ class TransactionListingWidget(Widget):
 
     def compose(self) -> ComposeResult:
         yield Collapsible(
-            Static(f"Type: {self.transaction.kind}"),
-            Static(f"Sender: {self.transaction.sender_address}"),
-            Static(f"Receiver: {self.transaction.receiver_address}"),
-            Static(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
-            Static(f"Fee: {self.transaction.fee.quantize(Decimal('0.01'))} GCN"),
+            Label(f"Type: {self.transaction.kind.upper()}"),
+            Label(f"Sender: {self.transaction.sender_address}"),
+            Label(f"Receiver: {self.transaction.receiver_address}"),
+            Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
+            Label(f"Fee: {self.transaction.fee.quantize(Decimal('0.01'))} GCN"),
             Vertical(
                 Horizontal(
                     Button("Move to pool", classes="button"),
@@ -48,7 +49,7 @@ class TransactionListingWidget(Widget):
                     classes="button_col"
                 ),
                 Horizontal(
-                    Button("Show details", classes="button"),
+                    Button("Show details", classes="button", id="show_tx_details"),
                     classes="button_col"
                 ),
                 classes="button_row"
@@ -57,3 +58,7 @@ class TransactionListingWidget(Widget):
             collapsed=True,
             classes=("transaction--reward" if self.transaction.kind == 'reward' else "")
         )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "show_tx_details":
+            self.app.push_screen(TransactionDetailScreen(self.transaction))

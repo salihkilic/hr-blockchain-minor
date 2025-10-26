@@ -7,18 +7,29 @@ from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget
 
 
 class BlockchainExplorerScreen(Screen):
+
+    DEFAULT_CSS = """
+        .column{
+            margin: 2;
+            padding: 1;
+        }
+
+    """
+
     def compose(self) -> ComposeResult:
         column_user_info = Vertical(
             Placeholder("User Info"),
             classes="column"
         )
         column_user_info.border_title = "User Information"
+        column_user_info.styles.border = ("double", "blueviolet")
 
         column_block_info = Vertical(
             BlockInfoWidget(),
             classes="column"
         )
         column_block_info.border_title = "Block information"
+        column_block_info.styles.border = ("double", "lightskyblue")
 
 
         column_transaction_pool = Vertical(
@@ -26,6 +37,7 @@ class BlockchainExplorerScreen(Screen):
             classes="column"
         )
         column_transaction_pool.border_title = "Transaction Pool"
+        column_transaction_pool.styles.border = ("double", "orange")
 
         yield Horizontal(
             column_user_info,

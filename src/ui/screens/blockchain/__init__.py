@@ -1,1 +1,2 @@
 from .BlockchainExplorerScreen import BlockchainExplorerScreen
+from .TransactionDetailScreen import TransactionDetailScreen

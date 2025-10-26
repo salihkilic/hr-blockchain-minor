@@ -1,7 +1,7 @@
 from textual.app import App
 
 from repositories.user import UserRepository
-from ui.screens.blockchain import BlockchainExplorerScreen
+from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen
 from ui.screens.user import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
 
 class BlockchainApp(App):
@@ -16,7 +16,8 @@ class BlockchainApp(App):
     }
     SCREENS = {
         "login_screen": UserLoginScreen,
-        "register_screen": UserRegisterScreen
+        "register_screen": UserRegisterScreen,
+        "transaction_detail_screen": TransactionDetailScreen,
     }
 
     def on_mount(self) -> None:

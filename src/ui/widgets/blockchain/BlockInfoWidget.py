@@ -20,7 +20,7 @@ class BlockInfoWidget(Widget):
             }
             .block__title {
                 padding: 1 2;
-                background: blue 20%;
+                background: lightskyblue 20%;
                 width: 100%;
                 text-align: center;
                 text-style: bold;

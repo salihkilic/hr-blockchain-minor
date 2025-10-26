@@ -18,13 +18,6 @@ class TransactionPoolWidget(Widget):
             .button {
                 width: 50%;
             }
-            .block__title {
-                padding: 1 2;
-                background: blue 20%;
-                width: 100%;
-                text-align: center;
-                text-style: bold;
-            }
         """
 
     def __init__(self, ):
@@ -37,7 +30,6 @@ class TransactionPoolWidget(Widget):
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         yield Vertical(
-            Label(f"Transaction pool", classes="block__title"),
             VerticalScroll(
                 *txs_widgets,
                 classes="transactions_scroll"
