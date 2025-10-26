@@ -1,6 +1,7 @@
 from decimal import Decimal
+from typing import Optional
 
-from models import Transaction
+from models import Transaction, User
 from faker import Faker
 
 from repositories.transaction import AbstractTransactionRepository
@@ -21,6 +22,14 @@ class MockTransactionRepository(AbstractTransactionRepository):
 
         for _ in range(5):
             txs.append(self._fake_transaction(kind='reward' if _ == 0 else 'transfer'))
+
+        return txs
+
+    def find_by_user(self, user: User) -> list[Transaction]:
+        txs = list()
+
+        for _ in range(10):
+            txs.append(self._fake_transaction(kind='transfer'))
 
         return txs
 

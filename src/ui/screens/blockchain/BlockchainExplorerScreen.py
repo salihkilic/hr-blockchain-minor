@@ -3,7 +3,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
-from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget
+from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget, UserInfoWidget
 
 
 class BlockchainExplorerScreen(Screen):
@@ -18,7 +18,7 @@ class BlockchainExplorerScreen(Screen):
 
     def compose(self) -> ComposeResult:
         column_user_info = Vertical(
-            Placeholder("User Info"),
+            UserInfoWidget(),
             classes="column"
         )
         column_user_info.border_title = "User Information"
