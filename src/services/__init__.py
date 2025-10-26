@@ -1,2 +1,2 @@
-from .difficulty import Difficulty, DifficultyConfig
+from .difficulty_service import DifficultyService, DifficultyConfig
 from .filesystem_service import FileSystemService

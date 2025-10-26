@@ -22,7 +22,7 @@ class DifficultyState:
     times: Deque[float] = field(default_factory=lambda: deque(maxlen=3))
 
 
-class Difficulty:
+class DifficultyService:
     """
     Static utility that tracks recent mining times and computes a recommended
     difficulty based on the current window average. It does NOT persist an internal
