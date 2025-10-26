@@ -14,6 +14,7 @@ class BlockInfoWidget(Widget):
             }
             .button_row {
                 height: auto;
+                padding: 1 0;
             }
             .button {
                 width: 50%;
