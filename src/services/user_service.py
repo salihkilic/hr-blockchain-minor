@@ -14,6 +14,12 @@ class UserService:
     def get_user(self, username) -> User:
         return self.repo.find_by_username(username)
 
+    def login(self, username:str, password:str) -> User | None:
+        user = self.repo.find_by_username(username)
+        if user and user.verify_password(password):
+            return user
+        return None
+
     def create_user(self, username:str, password:str) -> User | None:
         # Validate input
         if not self.validate_username(username) or not self.validate_password(password):
