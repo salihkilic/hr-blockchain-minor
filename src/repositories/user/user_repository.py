@@ -160,6 +160,7 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
             self._db_connection.commit()
         except sqlite3.InternalError:
             self._db_close()
+            # TODO SK: This seems like the wrong exception to raise here. Ask Tom.
             raise DuplicateUsernameException(f"Username '{user.username}' already exists.")
 
         self._db_close()
@@ -187,6 +188,15 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
         raise NotImplementedError("Find by ID is not implemented for UserRepository. (yet")
 
     def delete(self, entity: User) -> None:
-        raise NotImplementedError("User deletion is not implemented (yet).")
+        self._db_connect()
+        try:
+            self._db_connection.execute(
+                "DELETE FROM users WHERE username = ?",
+                (entity.username,)
+            )
+            self._db_connection.commit()
+        except Exception as e:
+            self._db_close()
+            raise e
 
 

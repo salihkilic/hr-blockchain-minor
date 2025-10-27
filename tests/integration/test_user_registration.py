@@ -1,6 +1,7 @@
 import unittest
-
 import pytest
+
+from services.user_service import UserService
 
 
 class UserRegistration(unittest.TestCase):
@@ -13,7 +14,21 @@ class UserRegistration(unittest.TestCase):
     @pytest.mark.skip(reason="TODO")
     def test_validation_of_required_user_fields(self):
         """ A user must provide a unique username and a password when registering in the system. """
-        pass
+
+        service = UserService()
+        good_user = service.create_user({
+            "username": "testuser",
+            "password": "password123"
+        })
+
+        bad_user = service.create_user({
+            "username": "",
+            "password": ""
+        })
+
+        # Assert that good_user is created successfully
+
+        # Assert that bad_user creation raises validation error
 
     @pytest.mark.skip(reason="TODO")
     def test_signup_reward(self):

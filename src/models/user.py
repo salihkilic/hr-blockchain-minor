@@ -50,9 +50,7 @@ class User:
         username: str,
         password: str,
         *,
-        recovery_phrase: Optional[str] = None,
-        prefer_pure_python: bool = False,
-    ) -> "User":
+        recovery_phrase: Optional[str] = None) -> "User":
         """
         Factory method to create a new user with a fresh Ed25519 keypair and hashed password.
         """
@@ -98,36 +96,6 @@ class User:
     def address(self) -> str:
         """Public account number (SHA256 of public_key)."""
         return hashlib.sha256(self.public_key.encode("utf-8")).hexdigest()
-
-    # -----------
-    # Serialization
-    # -----------
-    def to_dict(self, include_private: bool = False) -> Dict[str, Any]:
-        data: Dict[str, Any] = {
-            "username": self.username,
-            "password_hash": self.password_hash,
-            "salt": self.salt,
-            "public_key": self.public_key,
-            "key_type": self.key_type,
-            "recovery_phrase": self.recovery_phrase,
-            "created_at": self.created_at,
-        }
-        if include_private:
-            data["private_key"] = self.private_key
-        return data
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "User":
-        return cls(
-            username=data["username"],
-            password_hash=data["password_hash"],
-            salt=data["salt"],
-            public_key=data["public_key"],
-            private_key=data.get("private_key", ""),
-            key_type=data.get("key_type", "unknown"),
-            recovery_phrase=data.get("recovery_phrase"),
-            created_at=data.get("created_at", _now_iso()),
-        )
 
     # ----------
     # Signatures
