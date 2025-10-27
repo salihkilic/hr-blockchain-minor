@@ -14,8 +14,8 @@ def test_create_sets_expected_fields():
     # Extra: log the created user details for manual debugging
     logger = logging.getLogger("unit_tests")
     logger.info(f"Created user: {u.username}")
-    for field in u.to_dict(include_private=True):
-        logger.info(f"  {field}: {u.to_dict(include_private=True)[field]}")
+    for field in u.to_dict():
+        logger.info(f"  {field}: {u.to_dict()[field]}")
 
 
 def test_verify_password_ok_and_fail():
@@ -39,15 +39,11 @@ def test_sign_and_verify_success_and_failure():
     assert u.verify(b"tampered", sig) is False
 
 
-def test_to_from_dict_roundtrip_with_and_without_private_key():
+def test_to_from_dict_roundtrip():
     u = User.create("erin", "pw")
-    as_public = u.to_dict(include_private=False)
-    assert "private_key" not in as_public
+    user_dict = u.to_dict()
 
-    as_private = u.to_dict(include_private=True)
-    assert "private_key" in as_private
-
-    u2 = User.from_dict(as_private)
+    u2 = User.from_dict(user_dict)
     assert u2.username == u.username
     assert u2.public_key == u.public_key
     assert u2.private_key == u.private_key

@@ -134,3 +134,30 @@ class User:
 
     def __repr__(self) -> str:  # pragma: no cover - convenience only
         return f"User({self.public_profile()})"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert User to dictionary representation."""
+        return {
+            "username": self.username,
+            "password_hash": self.password_hash,
+            "salt": self.salt,
+            "public_key": self.public_key,
+            "private_key": self.private_key,
+            "key_type": self.key_type,
+            "recovery_phrase": self.recovery_phrase,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "User":
+        """Create User from dictionary representation."""
+        return cls(
+            username=data["username"],
+            password_hash=data["password_hash"],
+            salt=data["salt"],
+            public_key=data["public_key"],
+            private_key=data["private_key"],
+            key_type=data["key_type"],
+            recovery_phrase=data.get("recovery_phrase"),
+            created_at=data["created_at"],
+        )

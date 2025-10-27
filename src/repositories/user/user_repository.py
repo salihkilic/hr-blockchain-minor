@@ -160,8 +160,7 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
             self._db_connection.commit()
         except sqlite3.InternalError:
             self._db_close()
-            # TODO SK: This seems like the wrong exception to raise here. Ask Tom.
-            raise DuplicateUsernameException(f"Username '{user.username}' already exists.")
+            raise ValueError(f"User '{user.username}' does not exist.")
 
         self._db_close()
 

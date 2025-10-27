@@ -1,12 +1,14 @@
 import logging
 
+from exceptions.user import DuplicateUsernameException
 from models import User
+from repositories.user import AbstractUserRepository
 from repositories.user.user_repository import UserRepository
 
 class UserService:
 
-    def __init__(self):
-        self.repo = UserRepository()
+    def __init__(self, user_repo: AbstractUserRepository = None):
+        self.repo = user_repo if not None else UserRepository()
         self.logger = logging.getLogger(__name__)
 
     def get_user(self, username) -> User:
@@ -17,11 +19,16 @@ class UserService:
         if not self.validate_username(username) or not self.validate_password(password):
             return None
         # Create and persist user
-        new_user = User.create(
-            username=username,
-            password=password)
-        self.repo.persist(new_user)
-        return new_user
+        try:
+            new_user = User.create(
+                username=username,
+                password=password)
+            self.repo.persist(new_user)
+            return new_user
+        except DuplicateUsernameException:
+            self.logger.exception(f"Username '{username}' already exists.")
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during user creation: {e}")
 
     def update_user(self, user:User) -> bool:
         if not user or not user.username:

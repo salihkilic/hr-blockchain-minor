@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
-import hashlib
-import pickle
+from typing import Any, Dict, List, Optional
 
 
 def _now_iso() -> str:
@@ -47,3 +45,12 @@ class Block:
     version: int = 1
     difficulty: Optional[int] = None
 
+    def from_dict(cls, data: Dict[str, Any]) -> "Block":
+        data = data.copy()
+        data['validators'] = [ValidationFlag(**vf) for vf in data.get('validators', [])]
+        return cls(**data)
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = self.__dict__.copy()
+        data['validators'] = [vf.__dict__ for vf in self.validators]
+        return data
