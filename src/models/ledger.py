@@ -1,5 +1,9 @@
+import os
+import pickle
+
 from dataclasses import dataclass, field
 from block import Block
+from services import FileSystemService
 
 
 @dataclass
@@ -9,7 +13,7 @@ class Ledger:
 
     """
 
-    blocks: dict[str, "Block"] = field(default_factory=list)
+    blocks: dict[str, "Block"] = field(default_factory=dict)
     latest_block: Block | None = None
 
     def add_block(self, block: "Block") -> None:
@@ -30,3 +34,4 @@ class Ledger:
         :return: The block if found, else None.
         """
         return self.blocks.get(block_hash, None)
+
