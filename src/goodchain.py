@@ -1,7 +1,8 @@
 from textual.app import App
 
 from repositories.user import UserRepository
-from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen, TransactionCreateScreen
+from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen, TransactionCreateScreen, \
+    BlockMineScreen, BlockMiningScreen
 from ui.screens.user import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
 
 class BlockchainApp(App):
@@ -19,6 +20,8 @@ class BlockchainApp(App):
         "register_screen": UserRegisterScreen,
         "transaction_detail_screen": TransactionDetailScreen,
         "transaction_create_screen": TransactionCreateScreen,
+        "block_mine_screen": BlockMineScreen,
+        "block_mining_screen": BlockMiningScreen
     }
 
     def on_mount(self) -> None:

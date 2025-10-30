@@ -47,7 +47,7 @@ class BlockInfoWidget(Widget):
                     classes="button_col"
                 ),
                 Horizontal(
-                    Button("Mine block", classes="button", disabled=True),
+                    Button("Mine block", classes="button", id="mine_block"),
                     classes="button_col"
                 ),
                 classes="button_row"
@@ -57,6 +57,10 @@ class BlockInfoWidget(Widget):
                 classes="transactions_scroll"
             ),
         )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "mine_block":
+            self.app.push_screen("block_mine_screen")
 
         #
         # yield Vertical(

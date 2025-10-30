@@ -1,3 +1,5 @@
 from .BlockchainExplorerScreen import BlockchainExplorerScreen
 from .TransactionDetailScreen import TransactionDetailScreen
 from .TransactionCreateScreen import TransactionCreateScreen
+from .BlockMineScreen import BlockMineScreen
+from .BlockMiningScreen import BlockMiningScreen
