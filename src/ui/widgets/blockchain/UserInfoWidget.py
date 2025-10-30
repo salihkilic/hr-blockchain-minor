@@ -66,7 +66,7 @@ class UserInfoWidget(Widget):
                 ),
                 Horizontal(
                     Button("Logout", classes="button"),
-                    Button("Create transaction", classes="button"),
+                    Button("Create transaction", classes="button", id="create_transaction"),
                     classes="col"
                 ),
                 classes="row"
@@ -76,6 +76,10 @@ class UserInfoWidget(Widget):
                 classes="transactions_scroll"
             ),
         )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "create_transaction":
+            self.app.push_screen("transaction_create_screen")
 
         #
         # yield Vertical(

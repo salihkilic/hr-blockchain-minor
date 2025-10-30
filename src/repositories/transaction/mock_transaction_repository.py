@@ -41,7 +41,6 @@ class MockTransactionRepository(AbstractTransactionRepository):
                 sender_address=Faker().uuid4(),
                 fee=Decimal(Faker().pyfloat(1, 2, positive=True)),
                 amount=Decimal(Faker().pyfloat(2, 2, positive=True)),
-                version=1,
                 timestamp=Faker().iso8601(),
                 signature="SIGNATURE",
                 sender_public_key="KEY"
