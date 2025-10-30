@@ -4,7 +4,7 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
 from repositories.transaction import MockTransactionRepository
-from .TransactionListingWidget import TransactionListingWidget
+from .transaction_listing_widget import TransactionListingWidget
 
 
 class TransactionPoolWidget(Widget):

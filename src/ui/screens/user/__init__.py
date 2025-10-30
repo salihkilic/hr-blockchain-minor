@@ -1,3 +1,3 @@
-from .UserDashboardScreen import UserDashboardScreen
-from .UserLoginScreen import UserLoginScreen
-from .UserRegisterScreen import UserRegisterScreen
+from .user_dashboard_screen import UserDashboardScreen
+from .user_login_screen import UserLoginScreen
+from .user_register_screen import UserRegisterScreen

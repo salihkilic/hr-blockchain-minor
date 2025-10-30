@@ -6,7 +6,7 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Input
 
 from models import Transaction
-from ui.screens.blockchain.TransactionDetailScreen import TransactionDetailScreen
+from ui.screens.blockchain.transaction_detail_screen import TransactionDetailScreen
 
 
 class TransactionListingWidget(Widget):
