@@ -36,7 +36,7 @@ class TransactionDetailScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Button("Close", id="close")
         vertical = Vertical(
-            Label(f"Transaction hash: {self.transaction.txid}", classes="tx-hash"),
+            Label(f"Transaction hash: {self.transaction.id}", classes="tx-hash"),
             Rule(line_style="double", classes="rule"),
             Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
             Label(f"Fee: {self.transaction.fee.quantize(Decimal('0.01'))} GCN"),
@@ -47,7 +47,7 @@ class TransactionDetailScreen(Screen):
             Label(f"Signature: {self.transaction.signature}"),
             classes="transaction-detail-screen"
         )
-        vertical.border_title = self.transaction.kind.upper()
+        vertical.border_title = self.transaction.type.upper()
         yield vertical
         yield Footer()
 

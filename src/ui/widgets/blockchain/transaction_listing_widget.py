@@ -37,7 +37,7 @@ class TransactionListingWidget(Widget):
 
     def compose(self) -> ComposeResult:
         yield Collapsible(
-            Label(f"Type: {self.transaction.kind.upper()}"),
+            Label(f"Type: {self.transaction.type.upper()}"),
             Label(f"Sender: {self.transaction.sender_address}"),
             Label(f"Receiver: {self.transaction.receiver_address}"),
             Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
@@ -54,9 +54,9 @@ class TransactionListingWidget(Widget):
                 ),
                 classes="button_row"
             ),
-            title=f"TX {self.transaction.txid}",
+            title=f"TX {self.transaction.id}",
             collapsed=True,
-            classes=("transaction--reward" if self.transaction.kind == 'reward' else "")
+            classes=("transaction--reward" if self.transaction.type == 'reward' else "")
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

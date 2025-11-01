@@ -36,7 +36,7 @@ class MockTransactionRepository(AbstractTransactionRepository):
     def _fake_transaction(self, kind) -> Transaction:
         return Transaction(
                 kind=kind,
-                txid=Faker().sha256(),
+                id=Faker().sha256(),
                 receiver_address=Faker().uuid4(),
                 sender_address=Faker().uuid4(),
                 fee=Decimal(Faker().pyfloat(1, 2, positive=True)),
