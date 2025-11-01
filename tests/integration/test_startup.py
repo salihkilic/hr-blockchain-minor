@@ -27,12 +27,98 @@ def test_system_initializes_database_and_files_at_startup(tmp_path):
 
 
 
-@pytest.mark.skip(reason="TODO")
-def test_system_creates_missing_data_files_on_startup(self):
+@pytest.mark.integration
+def test_system_creates_missing_ledger_file_on_startup(tmp_path):
     """
     If data files are missing (DB / ledger / pool), system must create and configure them.
     """
-    pass
+    filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
+
+    tmp_data_path = tmp_path.as_posix() + "/data"
+    db_path = os.path.join(tmp_data_path, "users.sqlite3")
+    ledger_path = os.path.join(tmp_data_path, "ledger")
+    pool_path = os.path.join(tmp_data_path, "pool")
+
+    # Create a subset of the required files
+    os.makedirs(tmp_data_path)
+
+    _create_file(db_path)
+    _create_file(pool_path)
+
+    filesystem_service.initialize_data_files()
+
+    assert os.path.isfile(db_path)
+    assert os.path.isfile(ledger_path)
+    assert os.path.isfile(pool_path)
+
+    _check_if_file_was_changed(db_path)
+    _check_if_file_was_changed(pool_path)
+
+
+def _check_if_file_was_changed(pool_path):
+    with open(pool_path, 'rb') as pool_file:
+        pool_content = pool_file.read()
+        assert pool_content == b"original data"
+
+
+def _create_file(pool_path):
+    with open(pool_path, 'wb') as pool_file:
+        pool_file.write(b"original data")
+
+
+@pytest.mark.integration
+def test_system_creates_missing_db_file_on_startup(tmp_path):
+    """
+        If data files are missing (DB / ledger / pool), system must create and configure them.
+        """
+    filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
+
+    tmp_data_path = tmp_path.as_posix() + "/data"
+    db_path = os.path.join(tmp_data_path, "users.sqlite3")
+    ledger_path = os.path.join(tmp_data_path, "ledger")
+    pool_path = os.path.join(tmp_data_path, "pool")
+
+    # Create a subset of the required files
+    os.makedirs(tmp_data_path)
+
+    _create_file(ledger_path)
+    _create_file(pool_path)
+
+    filesystem_service.initialize_data_files()
+
+    assert os.path.isfile(db_path)
+    assert os.path.isfile(ledger_path)
+    assert os.path.isfile(pool_path)
+
+    _check_if_file_was_changed(ledger_path)
+    _check_if_file_was_changed(pool_path)
+
+@pytest.mark.integration
+def test_system_creates_missing_pool_file_on_startup(tmp_path):
+    """
+        If data files are missing (DB / ledger / pool), system must create and configure them.
+        """
+    filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
+
+    tmp_data_path = tmp_path.as_posix() + "/data"
+    db_path = os.path.join(tmp_data_path, "users.sqlite3")
+    ledger_path = os.path.join(tmp_data_path, "ledger")
+    pool_path = os.path.join(tmp_data_path, "pool")
+
+    # Create a subset of the required files
+    os.makedirs(tmp_data_path)
+
+    _create_file(ledger_path)
+    _create_file(db_path)
+
+    filesystem_service.initialize_data_files()
+
+    assert os.path.isfile(db_path)
+    assert os.path.isfile(ledger_path)
+    assert os.path.isfile(pool_path)
+
+    _check_if_file_was_changed(ledger_path)
+    _check_if_file_was_changed(db_path)
 
 
 @pytest.mark.skip(reason="TODO")
