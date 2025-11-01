@@ -9,6 +9,9 @@ import base64
 import hashlib
 import os
 
+from exceptions.user import DuplicateUsernameException
+from exceptions.user.invalid_user_exception import InvalidUserException
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -54,6 +57,18 @@ class User:
         """
         Factory method to create a new user with a fresh Ed25519 keypair and hashed password.
         """
+
+        if len(username) == 0:
+            raise InvalidUserException(message="Username cannot be empty.", field="username")
+
+        if len(password) == 0:
+            raise InvalidUserException(message="Password cannot be empty.", field="password")
+
+        from repositories.user.user_repository import UserRepository
+        user_repository = UserRepository()
+        if user_repository.username_exists(username):
+            raise DuplicateUsernameException(f"Username '{username}' already exists.")
+
         salt = base64.urlsafe_b64encode(os.urandom(16)).decode("ascii")
         password_hash = _hash_password(password, salt)
 

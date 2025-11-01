@@ -16,3 +16,7 @@ class AbstractTransactionRepository(ABC):
     @abstractmethod
     def find_by_user(self, user: User) -> list[Transaction]:
         ...
+
+    @abstractmethod
+    def write_transaction_to_pool(self, transaction: Transaction) -> None:
+        ...
