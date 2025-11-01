@@ -28,14 +28,11 @@ class UserRegistrationTests(unittest.TestCase):
     def test_validation_of_required_user_fields(self):
         """ A user must provide a unique username and a password when registering in the system. """
 
-        good_user = self.user_service.create_user("valid_user",
-                                                  "valid_password123")
+        good_user = self.user_service.create_user("valid_user", "valid_password123")
 
-        no_username = self.user_service.create_user("",
-                                                 "some_password")
+        no_username = self.user_service.create_user("", "some_password")
 
-        no_password = self.user_service.create_user("some_user",
-                                                    "")
+        no_password = self.user_service.create_user("some_user", "")
 
         # Assert that good_user is created successfully
         assert good_user is not None
@@ -56,8 +53,8 @@ class UserRegistrationTests(unittest.TestCase):
                                               "secure_password123")
 
         assert user1 is not None
-        assert hasattr(user1, 'public_key') # Check if attribute exists on model
-        assert user1.public_key is not None # Check if attribute is not null
+        assert hasattr(user1, 'public_key')  # Check if attribute exists on model
+        assert user1.public_key is not None  # Check if attribute is not null
         assert hasattr(user1, 'private_key')
         assert user1.private_key is not None
 

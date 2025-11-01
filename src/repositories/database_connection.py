@@ -15,7 +15,7 @@ class DatabaseConnection:
         if db_path is not None:
             self.FileSystemService.validate_file_exists(db_path, throw_exception=True)
         else:
-            db_path = self.FileSystemService.get_db_file_path("users.sqlite3")
+            db_path = self.FileSystemService.get_data_file_path("users.sqlite3")
 
         self.db_path = db_path
         self._db_connection: sqlite3.Connection | None = None

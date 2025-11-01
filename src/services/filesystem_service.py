@@ -1,22 +1,31 @@
 import os
+from typing import Optional
 
 from exceptions import RequestedDirectoryDoesNotExistException, RequestedFileDoesNotExistException
 
 
 class FileSystemService:
 
+    def __init__(self, repo_root: Optional[str] = None):
+        self.repo_root = repo_root
+        if repo_root is None:
+            self.repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+    def initialize_data_files(self):
+        self.get_data_file_path("users.sqlite3", create_if_missing=True)
+        self.get_data_file_path("ledger", create_if_missing=True)
+        self.get_data_file_path("pool", create_if_missing=True)
+
     def get_src_root(self) -> str:
         """ Returns the absolute path to the 'src' directory of the project. """
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        data_root = os.path.join(repo_root, "src")
+        data_root = os.path.join(self.repo_root, "src")
         if not self.validate_directory_exists(data_root):
             raise RequestedDirectoryDoesNotExistException(f"Src root directory does not exist: {data_root}")
         return data_root
 
-    def get_data_root(self, create_if_missing: bool = True) -> str:
+    def get_data_root(self, create_if_missing: bool = False) -> str:
         """ Returns the absolute path to the 'data' directory of the project. """
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        data_root = os.path.join(repo_root, "data")
+        data_root = os.path.join(self.repo_root, "data")
 
         if not self.validate_directory_exists(data_root):
             if create_if_missing:
@@ -42,16 +51,16 @@ class FileSystemService:
             raise RequestedDirectoryDoesNotExistException(f"Directory does not exist: {dir_path}")
         return False
 
-    def get_db_file_path(self, db_filename: str, create_if_missing: bool = True) -> str:
-        """ Returns the absolute path to the specified database file within the data directory. Throws an exception if the data directory does not exist. """
-        data_root = self.get_data_root()
-        db_path = os.path.join(data_root, db_filename)
-        if not os.path.exists(db_path):
+    def get_data_file_path(self, data_filename: str, create_if_missing: bool = False) -> str:
+        """ Returns the absolute path to the specified file within the data directory. Throws an exception if the data directory does not exist. """
+        data_root = self.get_data_root(create_if_missing=create_if_missing)
+        data_path = os.path.join(data_root, data_filename)
+        if not os.path.exists(data_path):
             if create_if_missing:
-                self.create_file(db_path)
+                self.create_file(data_path)
             else:
-                raise RequestedFileDoesNotExistException(f"File does not exist: {db_path}")
-        return db_path
+                raise RequestedFileDoesNotExistException(f"File does not exist: {data_path}")
+        return data_path
 
     def get_sql_file_path(self, sql_filename: str) -> str:
         """ Returns the absolute path to the specified SQL file within the src/DatabaseScripts directory. Throws an exception if the directory does not exist. """
@@ -62,7 +71,7 @@ class FileSystemService:
         self.validate_file_exists(sql_path, throw_exception=True)
         return sql_path
 
-    def create_file(self, file_path: str):
+    def create_file(self, file_path: str, throw_exception_if_exists: bool = False):
         """ Creates a file """
         file_path = os.path.abspath(file_path)
         directory = os.path.dirname(file_path)
@@ -73,7 +82,9 @@ class FileSystemService:
             )
 
         if os.path.exists(file_path):
-           return
+            if throw_exception_if_exists:
+                raise IOError(f"File already exists: {file_path}")
+            return
 
         try:
             with open(file_path, "w", encoding="utf-8") as f:
