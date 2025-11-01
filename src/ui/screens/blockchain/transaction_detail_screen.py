@@ -44,10 +44,10 @@ class TransactionDetailScreen(Screen):
             Label(f"Created at: {self.transaction.timestamp}"),
             Label(f"Sender: {self.transaction.sender_public_key}"),
             Label(f"Receiver: {self.transaction.receiver_address}"),
-            Label(f"Signature: {self.transaction.signature}"),
+            Label(f"Signature: {self.transaction.sender_signature}"),
             classes="transaction-detail-screen"
         )
-        vertical.border_title = self.transaction.type.upper()
+        vertical.border_title = self.transaction.kind.value.upper()
         yield vertical
         yield Footer()
 

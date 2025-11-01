@@ -6,6 +6,7 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Input
 
 from models import Transaction
+from models.enum import TransactionType
 from ui.screens.blockchain.transaction_detail_screen import TransactionDetailScreen
 
 
@@ -37,7 +38,7 @@ class TransactionListingWidget(Widget):
 
     def compose(self) -> ComposeResult:
         yield Collapsible(
-            Label(f"Type: {self.transaction.type.upper()}"),
+            Label(f"Type: {self.transaction.kind.value.upper()}"),
             Label(f"Sender: {self.transaction.sender_address}"),
             Label(f"Receiver: {self.transaction.receiver_address}"),
             Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
@@ -56,7 +57,7 @@ class TransactionListingWidget(Widget):
             ),
             title=f"TX {self.transaction.id}",
             collapsed=True,
-            classes=("transaction--reward" if self.transaction.type == 'reward' else "")
+            classes=("transaction--reward" if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD else "")
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

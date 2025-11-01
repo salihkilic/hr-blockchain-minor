@@ -4,6 +4,7 @@ from typing import Optional
 from models import Transaction, User
 from faker import Faker
 
+from models.enum import TransactionType
 from repositories.transaction import AbstractTransactionRepository
 
 
@@ -13,7 +14,7 @@ class MockTransactionRepository(AbstractTransactionRepository):
         txs = list()
 
         for _ in range(10):
-            txs.append(self._fake_transaction(kind='reward' if _ == 0 else 'transfer'))
+            txs.append(self._fake_transaction(kind=TransactionType.MINING_REWARD if _ == 0 else TransactionType.TRANSFER))
 
         return txs
 
@@ -21,7 +22,7 @@ class MockTransactionRepository(AbstractTransactionRepository):
         txs = list()
 
         for _ in range(5):
-            txs.append(self._fake_transaction(kind='reward' if _ == 0 else 'transfer'))
+            txs.append(self._fake_transaction(kind=TransactionType.SIGNUP_REWARD if _ == 0 or _ == 3 else TransactionType.TRANSFER))
 
         return txs
 
@@ -29,21 +30,18 @@ class MockTransactionRepository(AbstractTransactionRepository):
         txs = list()
 
         for _ in range(10):
-            txs.append(self._fake_transaction(kind='transfer'))
+            txs.append(self._fake_transaction(kind=TransactionType.TRANSFER))
 
         return txs
 
-    def _fake_transaction(self, kind) -> Transaction:
+    def _fake_transaction(self, kind: TransactionType) -> Transaction:
         return Transaction(
                 kind=kind,
-                id=Faker().sha256(),
-                receiver_address=Faker().uuid4(),
-                sender_address=Faker().uuid4(),
+                receiver_address=Faker().sha256(),
+                sender_address=Faker().sha256(),
                 fee=Decimal(Faker().pyfloat(1, 2, positive=True)),
                 amount=Decimal(Faker().pyfloat(2, 2, positive=True)),
-                timestamp=Faker().iso8601(),
-                signature="SIGNATURE",
+                sender_signature="SIGNATURE",
                 sender_public_key="KEY"
-
             )
 
