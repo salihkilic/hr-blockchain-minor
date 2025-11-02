@@ -55,7 +55,7 @@ class Transaction:
         self.id = cryptography_service.cryptographic_hash(self.as_content_line())
 
     @classmethod
-    def create_transaction(
+    def create(
             cls,
             sender: User,
             receiver_address: str,
