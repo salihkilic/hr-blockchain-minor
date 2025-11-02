@@ -5,7 +5,6 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
 from models import User
-from repositories.transaction import MockTransactionRepository
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -31,7 +30,6 @@ class UserInfoWidget(Widget):
         """
 
     def __init__(self, ):
-        self.TransactionRepository = MockTransactionRepository()
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -45,7 +43,7 @@ class UserInfoWidget(Widget):
             key_type="RSA"
         )
 
-        txs = self.TransactionRepository.find_by_user(logged_in_user)
+        txs = []
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         yield Vertical(
