@@ -45,3 +45,8 @@ class MockTransactionRepository(AbstractTransactionRepository):
                 sender_public_key="KEY"
             )
 
+    def write_transaction_to_pool(self, transaction: Transaction) -> None:
+        pass
+
+
+

@@ -26,6 +26,7 @@ class UserRegistrationTests(unittest.TestCase):
         user_repository = UserRepository(db_path=db_path)
         user_repository.setup_database_structure()
         self.user_repository = user_repository
+        self.db_path = db_path
 
     @pytest.mark.integration
     def test_validation_of_unique_username(self):
@@ -37,7 +38,9 @@ class UserRegistrationTests(unittest.TestCase):
 
         with pytest.raises(DuplicateUsernameException):
             User.create("testuser_unique",
-                        "newpassword789")
+                        "newpassword789",
+                        user_db_path=self.db_path
+                        )
 
     @pytest.mark.integration
     def test_validation_of_required_user_fields(self):
@@ -51,7 +54,7 @@ class UserRegistrationTests(unittest.TestCase):
         assert invalid_username_exception.value.field == "username"
 
         with pytest.raises(InvalidUserException) as invalid_password_exception:
-            no_username = User.create("some_username", "")
+            no_password = User.create("some_username", "")
 
         assert invalid_password_exception.value.field == "password"
 
@@ -59,7 +62,6 @@ class UserRegistrationTests(unittest.TestCase):
     def test_signup_reward(self):
         """ A node user will receive 50 coins as a sign-up reward, after registration. """
         pass
-
 
     @pytest.mark.integration
     def test_key_creation_on_signup(self):

@@ -53,7 +53,9 @@ class User:
         username: str,
         password: str,
         *,
-        recovery_phrase: Optional[str] = None) -> "User":
+        recovery_phrase: Optional[str] = None,
+        user_db_path: Optional[str] = None,
+    ) -> "User":
         """
         Factory method to create a new user with a fresh Ed25519 keypair and hashed password.
         """
@@ -65,7 +67,7 @@ class User:
             raise InvalidUserException(message="Password cannot be empty.", field="password")
 
         from repositories.user.user_repository import UserRepository
-        user_repository = UserRepository()
+        user_repository = UserRepository(db_path=user_db_path)
         if user_repository.username_exists(username):
             raise DuplicateUsernameException(f"Username '{username}' already exists.")
 
