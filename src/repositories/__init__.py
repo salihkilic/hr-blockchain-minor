@@ -1,1 +1,1 @@
-from .abstract_database_repository import AbstractDatabseRepository
+from .abstract_database_repository import AbstractDatabaseRepository

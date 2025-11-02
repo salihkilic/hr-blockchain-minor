@@ -23,7 +23,7 @@ class TestDatabaseUserClient(unittest.TestCase):
         # Create the empty DB file
         open(db_path, 'a').close()
 
-        user_repository = UserRepository(db_path=db_path)
+        user_repository = UserRepository(db_file_path=db_path)
         user_repository.setup_database_structure()
         self.user_repository = user_repository
         self.db_path = db_path
@@ -40,7 +40,7 @@ class TestDatabaseUserClient(unittest.TestCase):
     
     @pytest.mark.integration
     def test_create_and_fetch_user_roundtrip(self):
-        u = User.create("alice", "s3cret")
+        u = User.create("alice", "s3cret", user_db_path=self.db_path)
         self.user_repository.persist(u)
     
         got = self.user_repository.find_by_username("alice")
@@ -52,25 +52,25 @@ class TestDatabaseUserClient(unittest.TestCase):
     
     @pytest.mark.integration
     def test_duplicate_username_raises(self):
-        u = User.create("bob", "pw1")
+        u = User.create("bob", "pw1", user_db_path=self.db_path)
         self.user_repository.persist(u)
         with pytest.raises(DuplicateUsernameException):
-            self.user_repository.persist(User.create("bob", "pw2"))
+            self.user_repository.persist(User.create("bob", "pw2", user_db_path=self.db_path))
     
     
     @pytest.mark.integration
     def test_username_exists(self):
         assert self.user_repository.username_exists("carol") is False
-        self.user_repository.persist(User.create("carol", "pw"))
+        self.user_repository.persist(User.create("carol", "pw", user_db_path=self.db_path))
         assert self.user_repository.username_exists("carol") is True
     
     
     @pytest.mark.integration
     def test_update_user_changes_password_and_keys(self):
-        u = User.create("dave", "old")
+        u = User.create("dave", "old", user_db_path=self.db_path)
         self.user_repository.persist(u)
         # Rotate credentials by creating a fresh keypair/hash for the same username
-        u_new = User.create("dave", "new")
+        u_new = User.create("testnew", "new", user_db_path=self.db_path)
         # Copy new secrets into existing user object
         u.password_hash = u_new.password_hash
         u.salt = u_new.salt
@@ -94,7 +94,7 @@ class TestDatabaseUserClient(unittest.TestCase):
     def test_list_users_returns_inserted(self):
         names = {"erin", "frank", "grace"}
         for n in sorted(names):
-            self.user_repository.persist(User.create(n, f"{n}-pw"))
+            self.user_repository.persist(User.create(n, f"{n}-pw", user_db_path=self.db_path))
         listed = self.user_repository.find_all(limit=10, offset=0)
         listed_names = {u.username for u in listed}
         assert names <= listed_names

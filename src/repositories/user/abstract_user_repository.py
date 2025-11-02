@@ -1,10 +1,10 @@
 from abc import abstractmethod
 from typing import List
 from models import User
-from repositories.abstract_database_repository import AbstractDatabseRepository
+from repositories.abstract_database_repository import AbstractDatabaseRepository
 
 
-class AbstractUserRepository(AbstractDatabseRepository):
+class AbstractUserRepository(AbstractDatabaseRepository):
 
     @abstractmethod
     def persist(self, entity: User) -> None:

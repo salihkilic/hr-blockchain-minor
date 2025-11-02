@@ -26,7 +26,7 @@ class TransactionPoolWidget(Widget):
 
     def compose(self) -> ComposeResult:
 
-        txs = self.TransactionRepository.find_in_transaction_pool()
+        txs = self.TransactionRepository.find_in_transactions_pool()
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         yield Vertical(

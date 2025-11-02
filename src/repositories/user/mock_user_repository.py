@@ -10,7 +10,7 @@ from repositories.database_connection import DatabaseConnection
 #  - Centralize duplicate try exception handling
 class MockUserRepository(AbstractUserRepository, DatabaseConnection):
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_file_path: Optional[str] = None):
         self.users = {}
 
     def setup_database_structure(self) -> None:

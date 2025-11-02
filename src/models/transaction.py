@@ -94,15 +94,10 @@ class Transaction:
     ):
         return Transaction(
             receiver_address=receiver_address,
-            amount=Decimal.from_float(20.0),
+            amount=Decimal.from_float(50.0),
             fee=Decimal.from_float(0),
-            kind=TransactionType.MINING_REWARD,
+            kind=TransactionType.SIGNUP_REWARD,
         )
-
 
     def as_content_line(self) -> str:
         return f"{self.kind.value}:{self.sender_address}:{self.receiver_address}:{self.amount}:{self.fee}:{self.timestamp}"
-
-    def as_content_line_with_signature(self) -> str:
-        return f"{self.as_content_line()}:{self.sender_signature}"
-
