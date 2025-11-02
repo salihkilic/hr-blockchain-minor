@@ -42,7 +42,7 @@ class TestTransactionValidation(unittest.TestCase):
 
         original_sender = User.create_for_test("sender", "secret")
         original_receiver = User.create_for_test("receiver", "secret")
-        malicious_sender = User.create_for_test("malicious", "secret")
+        malicious_actor = User.create_for_test("malicious", "secret")
 
         valid_transaction = Transaction.create(original_sender, original_receiver.address, Decimal(10), Decimal(0.1))
 
@@ -55,8 +55,14 @@ class TestTransactionValidation(unittest.TestCase):
         with pytest.raises(InvalidTransactionException):
             tampered_transaction1.validate()
 
+        tampered_transaction2 = Transaction.create(original_sender, original_receiver.address, Decimal(10), Decimal(0.1))
+        tampered_transaction2.receiver_address = malicious_actor.address  # Tampered receiver
+
+        with pytest.raises(InvalidTransactionException):
+            tampered_transaction2.validate()
+
     @pytest.mark.skip(reason="TODO")
-    def test_miner_detects_tampered_signature_transaction_as_invalid(self):
+    def test_miner_detects_invalid_funds_transaction_as_invalid(self):
         """
         When mining a block:
         ✅ Tampered or invalid transactions must be detected and flagged as invalid by the miner.
