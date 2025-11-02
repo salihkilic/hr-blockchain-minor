@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from decimal import Decimal, ROUND_DOWN, getcontext
 
+from exceptions.transaction import InvalidTransactionException
 from models import User, Block
 from models.enum import TransactionType
 from services import CryptographyService
@@ -41,6 +42,7 @@ class Transaction:
             sender_signature: Optional[str] = None,
     ):
         cryptography_service = CryptographyService()
+        self.cryptography_service = cryptography_service
 
         self.receiver_address = receiver_address
         self.amount = amount.quantize(Decimal("0.00000001"), rounding=ROUND_DOWN)
@@ -52,7 +54,7 @@ class Transaction:
         self.timestamp = datetime.now(timezone.utc).isoformat()
 
         # Important that other fields are set before id generation
-        self.id = cryptography_service.cryptographic_hash(self.as_content_line())
+        self._id = self.cryptography_service.cryptographic_hash(self.as_content_line())
 
     @classmethod
     def create(
@@ -71,7 +73,7 @@ class Transaction:
         )
 
         tx_content = transaction.as_content_line()
-        transaction.signature = sender.sign(tx_content.encode())
+        transaction.sender_signature = sender.sign(tx_content.encode())
 
         return transaction
 
@@ -101,3 +103,40 @@ class Transaction:
 
     def as_content_line(self) -> str:
         return f"{self.kind.value}:{self.sender_address}:{self.receiver_address}:{self.amount}:{self.fee}:{self.timestamp}"
+
+    def validate(self):
+        """ Validates the transaction content and signature. Raises exception if invalid. """
+        match self.kind:
+            case TransactionType.TRANSFER:
+                self._validate_transfer()
+            case TransactionType.MINING_REWARD:
+                self._validate_mining_reward()
+            case TransactionType.SIGNUP_REWARD:
+                self._validate_signup_reward()
+            case _:
+                raise ValueError(f"Unknown transaction type: {self.kind}")
+
+    def _validate_transfer(self):
+        senders_public_key = self.sender_public_key
+        if not senders_public_key:
+            raise InvalidTransactionException("Sender's public key is missing.")
+
+        signature = self.sender_signature
+
+        if not signature:
+            raise InvalidTransactionException("Transaction signature is missing.")
+
+        valid = self.cryptography_service.validate_signature(
+            message=self.as_content_line(),
+            signature_b64=signature,
+            public_key_pem=senders_public_key
+        )
+
+        if not valid:
+            raise InvalidTransactionException("Invalid transaction signature.")
+
+    def _validate_mining_reward(self):
+        raise NotImplementedError("Mining reward validation not implemented yet.")
+
+    def _validate_signup_reward(self):
+        raise NotImplementedError("Signup reward validation not implemented yet.")

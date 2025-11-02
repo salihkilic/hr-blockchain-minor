@@ -1,6 +1,10 @@
 import unittest
+from decimal import Decimal
 
 import pytest
+
+from exceptions.transaction import InvalidTransactionException
+from models import User, Transaction
 
 
 class TestTransactionValidation(unittest.TestCase):
@@ -29,12 +33,35 @@ class TestTransactionValidation(unittest.TestCase):
         """
         pass
 
-    @pytest.mark.skip(reason="TODO")
-    def test_miner_detects_tampered_transaction_as_invalid(self):
+    @pytest.mark.integration
+    def test_miner_detects_tampered_signature_transaction_as_invalid(self):
         """
         When mining a block:
         ✅ Tampered or invalid transactions must be detected and flagged as invalid by the miner.
         """
+
+        original_sender = User.create_for_test("sender", "secret")
+        original_receiver = User.create_for_test("receiver", "secret")
+        malicious_sender = User.create_for_test("malicious", "secret")
+
+        valid_transaction = Transaction.create(original_sender, original_receiver.address, Decimal(10), Decimal(0.1))
+
+        valid_transaction.validate()
+
+        # Simulate tampering by changing the amount after creation
+        tampered_transaction1 = Transaction.create(original_sender, original_receiver.address, Decimal(10), Decimal(0.1))
+        tampered_transaction1.amount = Decimal(1000)  # Tampered amount
+
+        with pytest.raises(InvalidTransactionException):
+            tampered_transaction1.validate()
+
+    @pytest.mark.skip(reason="TODO")
+    def test_miner_detects_tampered_signature_transaction_as_invalid(self):
+        """
+        When mining a block:
+        ✅ Tampered or invalid transactions must be detected and flagged as invalid by the miner.
+        """
+        # TODO: Test that the amount can be spent by the sender
         pass
 
     @pytest.mark.skip(reason="TODO")
