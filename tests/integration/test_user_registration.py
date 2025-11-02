@@ -1,4 +1,5 @@
 import os
+import pickle
 import tempfile
 import unittest
 import pytest
@@ -31,6 +32,7 @@ class UserRegistrationTests(unittest.TestCase):
 
         self.user_repository = user_repository
         self.db_path = db_file_path
+        self.pool_file_path = pool_file_path
 
         Pool.destroy_instance()
         Pool.create_instance(file_path=pool_file_path)
@@ -83,6 +85,16 @@ class UserRegistrationTests(unittest.TestCase):
         assert transactions_in_pool[0].amount == 50
         assert transactions_in_pool[0].receiver_address == user.address
         assert transactions_in_pool[0].kind == TransactionType.SIGNUP_REWARD
+
+        # Fetch the stored instance with pickle
+        with open(self.pool_file_path, 'rb') as f:
+            stored_pool = pickle.load(f)
+
+        stored_transactions = stored_pool.get_transactions()
+        assert len(stored_transactions) == 1
+        assert stored_transactions[0].amount == 50
+        assert stored_transactions[0].receiver_address == user.address
+        assert stored_transactions[0].kind == TransactionType.SIGNUP_REWARD
 
 
     @pytest.mark.integration
