@@ -1,5 +1,6 @@
 from enum import Enum
 
 class TransactionType(Enum):
-    NORMAL = 1
-    REWARD = 2
+    TRANSFER = 'transfer'
+    SIGNUP_REWARD = 'signup reward'
+    MINING_REWARD = 'mining reward'

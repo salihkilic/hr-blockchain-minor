@@ -11,11 +11,8 @@ from services import FileSystemService
 #  - Centralize duplicate try exception handling
 class UserRepository(AbstractUserRepository, DatabaseConnection):
 
-    def __init__(self, db_path: Optional[str] = None):
-        super().__init__(db_path)
-
-        # Injected services
-        self.FileSystemService = FileSystemService()
+    def __init__(self, db_file_path: Optional[str] = None):
+        super().__init__(db_file_path)
 
     def setup_database_structure(self) -> None:
         self._db_connect()

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AbstractDatabseRepository(ABC):
+class AbstractDatabaseRepository(ABC):
 
     @abstractmethod
     def persist(self, entity) -> None:

@@ -3,7 +3,6 @@ from textual.containers import Vertical, Horizontal, VerticalScroll, Container
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
-from repositories.transaction import MockTransactionRepository
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -29,13 +28,12 @@ class BlockInfoWidget(Widget):
         """
 
     def __init__(self, ):
-        self.TransactionRepository = MockTransactionRepository()
         super().__init__()
 
     def compose(self) -> ComposeResult:
         visible_block = 23
 
-        txs = self.TransactionRepository.find_by_block_id(visible_block)
+        txs = []
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         yield Vertical(

@@ -3,7 +3,7 @@ from textual.containers import Vertical, Horizontal, VerticalScroll, Container
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
-from repositories.transaction import MockTransactionRepository
+from blockchain import Pool
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -21,12 +21,11 @@ class TransactionPoolWidget(Widget):
         """
 
     def __init__(self, ):
-        self.TransactionRepository = MockTransactionRepository()
         super().__init__()
 
     def compose(self) -> ComposeResult:
 
-        txs = self.TransactionRepository.find_in_transaction_pool()
+        txs = Pool.get_instance().get_transactions()
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         yield Vertical(
