@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 from decimal import Decimal
 
@@ -5,6 +7,8 @@ import pytest
 
 from exceptions.transaction import InvalidTransactionException
 from models import User, Transaction
+from repositories.user import UserRepository
+from services import FileSystemService
 
 
 class TestTransactionValidation(unittest.TestCase):
@@ -39,7 +43,6 @@ class TestTransactionValidation(unittest.TestCase):
         When mining a block:
         ✅ Tampered or invalid transactions must be detected and flagged as invalid by the miner.
         """
-
         original_sender = User.create_for_test("sender", "secret")
         original_receiver = User.create_for_test("receiver", "secret")
         malicious_actor = User.create_for_test("malicious", "secret")

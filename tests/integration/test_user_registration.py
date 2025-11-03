@@ -5,8 +5,7 @@ import unittest
 import pytest
 
 from blockchain import Pool
-from exceptions.user import DuplicateUsernameException
-from exceptions.user.invalid_user_exception import InvalidUserException
+from exceptions.user import DuplicateUsernameException, InvalidUserException
 from models import User, Transaction
 from models.enum import TransactionType
 from repositories.user import UserRepository

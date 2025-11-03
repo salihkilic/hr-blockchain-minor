@@ -1,1 +1,2 @@
 from .duplicated_username_exception import DuplicateUsernameException
+from .invalid_user_exception import InvalidUserException

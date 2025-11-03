@@ -9,8 +9,7 @@ import base64
 import hashlib
 import os
 
-from exceptions.user import DuplicateUsernameException
-from exceptions.user.invalid_user_exception import InvalidUserException
+from exceptions.user import DuplicateUsernameException, InvalidUserException
 
 
 def _now_iso() -> str:

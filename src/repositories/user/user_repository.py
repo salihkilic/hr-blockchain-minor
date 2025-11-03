@@ -194,5 +194,3 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
         except Exception as e:
             self._db_close()
             raise e
-
-
