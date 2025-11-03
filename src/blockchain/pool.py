@@ -10,10 +10,10 @@ class Pool(AbstractPickableSingleton):
     _transactions: list[Transaction]
 
     def __init__(self, file_path: Optional[str] = None):
+        self._transactions = []
         if file_path is None:
             filesystem_service = FileSystemService()
             file_path = os.path.join(filesystem_service.get_data_root(), FileSystemService.POOL_FILE_NAME)
-        self._transactions = []
         super().__init__(file_path)
 
     def add_transaction(self, transaction: Transaction) -> None:
@@ -22,6 +22,13 @@ class Pool(AbstractPickableSingleton):
 
     def get_transactions(self) -> list[Transaction]:
         return self.get_instance()._transactions
+
+    @classmethod
+    def load(cls, file_path) -> Optional["AbstractPickableSingleton"]:
+        if file_path is None:
+            filesystem_service = FileSystemService()
+            file_path = os.path.join(filesystem_service.get_data_root(), FileSystemService.POOL_FILE_NAME)
+        return super().load(file_path)
 
     @classmethod
     def get_instance(cls) -> "Pool":

@@ -55,7 +55,7 @@ class TransactionListingWidget(Widget):
                 ),
                 classes="button_row"
             ),
-            title=f"TX {self.transaction.id}",
+            title=f"TX {self.transaction.hash}",
             collapsed=True,
             classes=("transaction--reward" if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD else "")
         )

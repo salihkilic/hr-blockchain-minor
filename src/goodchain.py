@@ -1,6 +1,10 @@
+from decimal import Decimal
+
 from textual.app import App
 
 from blockchain import Pool
+from blockchain.ledger import Ledger
+from models import User, Transaction
 from repositories.user import UserRepository
 from services import FileSystemService
 from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen, TransactionCreateScreen, \
@@ -34,6 +38,7 @@ class BlockchainApp(App):
         user_repository.setup_database_structure()
 
         Pool.create_instance()
+        Ledger.create_instance()
 
         self.switch_mode("blockchain_explorer")
 
