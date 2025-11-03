@@ -108,6 +108,9 @@ class Block:
             except InvalidTransactionException as e:
                 raise InvalidBlockException(f"Invalid transaction in block: {e}")
 
+        if not (5 <= len(transactions) <= 10):
+            raise InvalidBlockException("Block must contain between 5 and 10 valid transactions.")
+
         from blockchain.ledger import Ledger
         ledger = Ledger.get_instance()
         previous_block = ledger.get_latest_block()

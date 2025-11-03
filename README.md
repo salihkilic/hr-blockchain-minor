@@ -21,5 +21,3 @@ Some nice links:
 - Examples:
   - [Textual Examples (How-To)](https://github.com/Textualize/textual/tree/main/docs/examples)
   - [Textual Examples (Demos)](https://github.com/Textualize/textual/tree/main/examples)
-
-## Storage formats

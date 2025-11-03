@@ -2,11 +2,14 @@ import hashlib
 import unittest
 from unittest.mock import Mock
 
+import pytest
+
 from services import CryptographyService
 
 
 class TestCryptographyService(unittest.TestCase):
 
+    @pytest.mark.unit
     def test_find_merkle_root_for_list(self):
         tx1 = Mock()
         tx2 = Mock()

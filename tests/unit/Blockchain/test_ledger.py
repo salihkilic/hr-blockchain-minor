@@ -3,6 +3,8 @@ import tempfile
 import unittest
 from decimal import Decimal
 
+import pytest
+
 from blockchain.ledger import Ledger
 from models import User, Transaction, Block
 from services import FileSystemService
@@ -23,7 +25,7 @@ class TestLedger(unittest.TestCase):
         Ledger.destroy_instance()
         Ledger.create_instance(file_path=ledger_file_path)
 
-
+    @pytest.mark.unit
     def test_with_transactions(self):
         user1 = User.create_for_test("user1", "password1") # Wallet 50
         user2 = User.create_for_test("user2", "password2") # Wallet 50
@@ -54,5 +56,9 @@ class TestLedger(unittest.TestCase):
         self.assertIsNotNone(reloaded_latest_block)
         self.assertEqual(reloaded_latest_block.calculated_hash, block.calculated_hash)
         self.assertEqual(len(reloaded_latest_block.transactions), 3)
+
+    @pytest.mark.skip(reason="TODO")
+    def test_validates_that_transactions_are_in_the_pool(self):
+        pass
 
 
