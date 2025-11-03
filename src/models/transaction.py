@@ -6,16 +6,18 @@ from typing import Optional
 from decimal import Decimal, ROUND_DOWN, getcontext
 
 from exceptions.transaction import InvalidTransactionException
-from models import User, Block
-from models.enum import TransactionType
+from .abstract_hashable_model import AbstractHashableModel
+from .user import User
+from .enum.transaction_type import TransactionType
 from services import CryptographyService
 
+
 @dataclass
-class Transaction:
+class Transaction(AbstractHashableModel):
     """
     Account-based transaction model
     """
-    id: str
+    _hash: str
 
     receiver_address: str
 
@@ -54,7 +56,14 @@ class Transaction:
         self.timestamp = datetime.now(timezone.utc).isoformat()
 
         # Important that other fields are set before id generation
-        self._id = self.cryptography_service.cryptographic_hash(self.as_content_line())
+        self._hash = self.cryptography_service.sha256_hash(self.canonicalize())
+
+    def to_hash(self) -> str:
+        return self._hash
+
+    @property
+    def hash(self) -> str:
+        return self._hash
 
     @classmethod
     def create(
@@ -72,17 +81,16 @@ class Transaction:
             fee=fee,
         )
 
-        tx_content = transaction.as_content_line()
+        tx_content = transaction.canonicalize()
         transaction.sender_signature = sender.sign(tx_content.encode())
 
         return transaction
-
 
     @classmethod
     def create_mining_reward(
             cls,
             receiver_address: str,
-            block: Block
+            block_nr: int
     ):
         # TODO
         #  If there is already a mining reward in the block, raise an error
@@ -101,8 +109,15 @@ class Transaction:
             kind=TransactionType.SIGNUP_REWARD,
         )
 
-    def as_content_line(self) -> str:
-        return f"{self.kind.value}:{self.sender_address}:{self.receiver_address}:{self.amount}:{self.fee}:{self.timestamp}"
+    def canonicalize(self) -> str:
+        return f"{self.kind.value}|{self.sender_address}|{self.receiver_address}|{self.amount}|{self.fee}|{self.timestamp}"
+
+    def canonicalize_with_signature_and_hash(self) -> str:
+        if not self.hash:
+            raise ValueError("Transaction hash is not set.")
+        if not self.sender_signature:
+            raise ValueError("Sender signature is not set.")
+        return f"{self.canonicalize()}|{self.sender_signature}|{self.hash}"
 
     def validate(self):
         """ Validates the transaction content and signature. Raises exception if invalid. """
@@ -117,6 +132,10 @@ class Transaction:
                 raise ValueError(f"Unknown transaction type: {self.kind}")
 
     def _validate_transfer(self):
+
+        # TODO Validate spender has sufficient funds
+        # TODO Mark transaction as invalid when necessary
+
         senders_public_key = self.sender_public_key
         if not senders_public_key:
             raise InvalidTransactionException("Sender's public key is missing.")
@@ -127,7 +146,7 @@ class Transaction:
             raise InvalidTransactionException("Transaction signature is missing.")
 
         valid = self.cryptography_service.validate_signature(
-            message=self.as_content_line(),
+            message=self.canonicalize(),
             signature_b64=signature,
             public_key_pem=senders_public_key
         )

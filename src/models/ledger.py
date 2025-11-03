@@ -2,7 +2,7 @@ import os
 import pickle
 
 from dataclasses import dataclass, field
-from block import Block
+from .block import Block
 from services import FileSystemService
 
 
