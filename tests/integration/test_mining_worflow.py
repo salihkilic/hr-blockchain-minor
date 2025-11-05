@@ -54,7 +54,6 @@ class TestMiningWorkflow(unittest.TestCase):
                 transaction5,
                 transaction6
             ]
-
         block = Block.mine_with_transactions(
             miner=user1,
             transactions=correct_transactions

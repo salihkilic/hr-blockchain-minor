@@ -35,6 +35,8 @@ class TestLedger(unittest.TestCase):
             Transaction.create(user1, user2.address, Decimal(10), Decimal(0.1)),  # user1 (50, 39.9) -> user2 (60.1)
             Transaction.create(user2, user3.address, Decimal(20), Decimal(0.2)),  # user2 (60.1, 39.9) -> user3 (70)
             Transaction.create(user3, user1.address, Decimal(5), Decimal(0.05)),   # user3 (70, 64.95) -> user1 (44.95)
+            Transaction.create(user1, user3.address, Decimal(15), Decimal(0.15)), # user1 (44.95, 29.8) -> user3 (79.95)
+            Transaction.create(user2, user1.address, Decimal(10), Decimal(0.1)),  # user2 (39.9, 29.8) -> user1 (39.8)
         ]
 
         block = Block.mine_with_transactions(
@@ -47,7 +49,7 @@ class TestLedger(unittest.TestCase):
         latest_block = Ledger.get_instance().get_latest_block()
         self.assertIsNotNone(latest_block)
         self.assertEqual(latest_block.calculated_hash, block.calculated_hash)
-        self.assertEqual(len(latest_block.transactions), 3)
+        self.assertEqual(len(latest_block.transactions), len(transactions))
 
         # Destroy and reload the ledger to verify persistence
         Ledger.destroy_instance()
@@ -55,7 +57,7 @@ class TestLedger(unittest.TestCase):
         reloaded_latest_block = Ledger.get_instance().get_latest_block()
         self.assertIsNotNone(reloaded_latest_block)
         self.assertEqual(reloaded_latest_block.calculated_hash, block.calculated_hash)
-        self.assertEqual(len(reloaded_latest_block.transactions), 3)
+        self.assertEqual(len(reloaded_latest_block.transactions), len(transactions))
 
     @pytest.mark.skip(reason="TODO")
     def test_validates_that_transactions_are_in_the_pool(self):

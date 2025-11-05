@@ -20,6 +20,9 @@ class UserRegistrationTests(unittest.TestCase):
         db_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.USERS_DB_FILE_NAME)
         pool_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.POOL_FILE_NAME)
 
+        filesystem_service = FileSystemService(tmp_path)
+        filesystem_service.initialize_data_files()
+
         # Create folders
         os.makedirs(os.path.dirname(db_file_path), exist_ok=True)
 
