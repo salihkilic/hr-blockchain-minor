@@ -1,10 +1,12 @@
 import os
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
 
+from blockchain import Pool
 from blockchain.ledger import Ledger
 from exceptions.mining import InvalidBlockException
 from models import User, Transaction, Block
@@ -20,11 +22,14 @@ class TestMiningWorkflow(unittest.TestCase):
 
         os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
 
-        filesystem_service = FileSystemService()
-        filesystem_service.create_file(ledger_file_path)
+        filesystem_service = FileSystemService(repo_root=tmp_path)
+        filesystem_service.initialize_data_files()
 
         Ledger.destroy_instance()
         Ledger.create_instance(file_path=ledger_file_path)
+
+        Pool.destroy_instance()
+        Pool.create_instance(file_path=self.pool_file_path)
 
     @pytest.mark.integration
     def test_miner_selects_between_5_and_10_valid_transactions(self):
@@ -47,13 +52,13 @@ class TestMiningWorkflow(unittest.TestCase):
         transaction11 = Transaction.create(user1, user2.address, Decimal(35.0), fee=Decimal(0.35))
 
         correct_transactions = [
-                transaction1,
-                transaction2,
-                transaction3,
-                transaction4,
-                transaction5,
-                transaction6
-            ]
+            transaction1,
+            transaction2,
+            transaction3,
+            transaction4,
+            transaction5,
+            transaction6
+        ]
         block = Block.mine_with_transactions(
             miner=user1,
             transactions=correct_transactions
@@ -95,13 +100,91 @@ class TestMiningWorkflow(unittest.TestCase):
 
         assert excinfo.value.__str__() == "Block must contain between 5 and 10 valid transactions."
 
-    @pytest.mark.skip(reason="TODO")
+    @pytest.mark.integration
     def test_mining_strategy_cannot_be_biased(self):
         """
         Miner cannot exclusively choose their own transactions or ignore zero-fee/low-fee ones permanently.
         Strategy must eventually include all valid pool transactions.
         """
-        pass
+
+        user1 = User.create_for_test("miner1", "password1")
+        user2 = User.create_for_test("user2", "password2")
+
+        transactions = [
+            Transaction.create(user1, user2.address, Decimal(10.0), fee=Decimal(0.1)),
+            Transaction.create(user2, user1.address, Decimal(5.0), fee=Decimal(0.05)),
+            Transaction.create(user1, user2.address, Decimal(20.0), fee=Decimal(0.2)),
+            Transaction.create(user2, user1.address, Decimal(15.0), fee=Decimal(0.15)),
+            Transaction.create(user1, user2.address, Decimal(30.0), fee=Decimal(0.3)),
+            Transaction.create(user2, user1.address, Decimal(25.0), fee=Decimal(0.25)),
+            Transaction.create(user1, user2.address, Decimal(12.0), fee=Decimal(0.0012)),
+            Transaction.create(user2, user1.address, Decimal(18.0), fee=Decimal(0.18)),
+            Transaction.create(user1, user2.address, Decimal(22.0), fee=Decimal(0.22)),
+            Transaction.create(user2, user1.address, Decimal(28.0), fee=Decimal(0.28)),
+            Transaction.create(user1, user2.address, Decimal(35.0), fee=Decimal(0.0035))
+        ]
+
+        for tx in transactions:
+            Pool.get_instance().add_transaction(tx)
+
+        required_transactions = Pool.get_instance().get_required_transactions()
+
+        assert required_transactions is not None
+        assert len(required_transactions) == 4
+        assert required_transactions[0] == transactions[0]  # Oldest transaction
+        assert required_transactions[1] == transactions[1]  # Second oldest transaction
+        assert required_transactions[2] == transactions[6]  # Lowest fee transaction
+        assert required_transactions[3] == transactions[10] # Second lowest fee transaction
+
+        fake_mine_timestamp = datetime.now(timezone.utc).isoformat()
+
+        extra_transactions = [
+            Transaction.create(user1, user2.address, Decimal(40.0), fee=Decimal(0)),
+            Transaction.create(user2, user1.address, Decimal(45.0), fee=Decimal(0.045))
+        ]
+
+        for tx in extra_transactions:
+            Pool.get_instance().add_transaction(tx)
+
+        required_transactions_after_block_mined = Pool.get_instance().get_required_transactions(max_timestamp=fake_mine_timestamp)
+
+        assert required_transactions_after_block_mined is not None
+        assert len(required_transactions_after_block_mined) == 4
+        assert required_transactions_after_block_mined[0] == transactions[0]  # Oldest transaction
+        assert required_transactions_after_block_mined[1] == transactions[1]  # Second oldest transaction
+        assert required_transactions_after_block_mined[2] == transactions[6]  # Lowest fee transaction
+        assert required_transactions_after_block_mined[3] == transactions[10] # Second lowest fee transaction
+
+        fair_block = Block.mine_with_transactions(
+            miner=user1,
+            transactions=[
+                transactions[0],
+                transactions[1],
+                transactions[6],
+                transactions[10],
+                extra_transactions[0]
+            ]
+        )
+
+        Pool.get_instance().validate_transaction_in_block_for_fairness(fair_block)
+
+        unfair_block = Block.mine_with_transactions(
+            miner=user1,
+            transactions=[
+                transactions[0],
+                transactions[2],
+                transactions[4],
+                transactions[6],
+                transactions[8]
+            ]
+        )
+
+        # Only own transactions
+        with pytest.raises(InvalidBlockException) as excinf:
+            Pool.get_instance().validate_transaction_in_block_for_fairness(unfair_block)
+
+        assert excinf.value.__str__() == "Not all required transactions are included in the block for fairness."
+
 
     @pytest.mark.skip(reason="TODO")
     def test_miner_prioritizes_high_transaction_fees_but_includes_others_eventually(self):
@@ -163,6 +246,7 @@ class TestMiningWorkflow(unittest.TestCase):
         These must later be auto-canceled when their creator logs in.
         """
         pass
+
 
 if __name__ == '__main__':
     unittest.main()
