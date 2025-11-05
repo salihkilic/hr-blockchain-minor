@@ -1,15 +1,100 @@
+import os
+import tempfile
 import unittest
+from decimal import Decimal
 
 import pytest
 
+from blockchain.ledger import Ledger
+from exceptions.mining import InvalidBlockException
+from models import User, Transaction, Block
+from services import FileSystemService
+
+
 class TestMiningWorkflow(unittest.TestCase):
 
-    @pytest.mark.skip(reason="TODO")
+    def setUp(self):
+        tmp_path = tempfile.TemporaryDirectory().name
+        ledger_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.LEDGER_FILE_NAME)
+        self.pool_file_path = ledger_file_path
+
+        os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
+
+        filesystem_service = FileSystemService()
+        filesystem_service.create_file(ledger_file_path)
+
+        Ledger.destroy_instance()
+        Ledger.create_instance(file_path=ledger_file_path)
+
+    @pytest.mark.integration
     def test_miner_selects_between_5_and_10_valid_transactions(self):
         """
         Miner must choose minimum 5 and maximum 10 valid transactions from the pool.
         """
-        pass
+        user1 = User.create_for_test("miner1", "password1")
+        user2 = User.create_for_test("user2", "password2")
+
+        transaction1 = Transaction.create(user1, user2.address, Decimal(10.0), fee=Decimal(0.1))
+        transaction2 = Transaction.create(user2, user1.address, Decimal(5.0), fee=Decimal(0.05))
+        transaction3 = Transaction.create(user1, user2.address, Decimal(20.0), fee=Decimal(0.2))
+        transaction4 = Transaction.create(user2, user1.address, Decimal(15.0), fee=Decimal(0.15))
+        transaction5 = Transaction.create(user1, user2.address, Decimal(30.0), fee=Decimal(0.3))
+        transaction6 = Transaction.create(user2, user1.address, Decimal(25.0), fee=Decimal(0.25))
+        transaction7 = Transaction.create(user1, user2.address, Decimal(12.0), fee=Decimal(0.12))
+        transaction8 = Transaction.create(user2, user1.address, Decimal(18.0), fee=Decimal(0.18))
+        transaction9 = Transaction.create(user1, user2.address, Decimal(22.0), fee=Decimal(0.22))
+        transaction10 = Transaction.create(user2, user1.address, Decimal(28.0), fee=Decimal(0.28))
+        transaction11 = Transaction.create(user1, user2.address, Decimal(35.0), fee=Decimal(0.35))
+
+        correct_transactions = [
+                transaction1,
+                transaction2,
+                transaction3,
+                transaction4,
+                transaction5,
+                transaction6
+            ]
+
+        block = Block.mine_with_transactions(
+            miner=user1,
+            transactions=correct_transactions
+        )
+
+        too_few_transactions = [
+            transaction1,
+            transaction2,
+            transaction3
+        ]
+
+        with pytest.raises(InvalidBlockException) as excinfo:
+            block = Block.mine_with_transactions(
+                miner=user1,
+                transactions=too_few_transactions
+            )
+
+        assert excinfo.value.__str__() == "Block must contain between 5 and 10 valid transactions."
+
+        too_many_transactions = [
+            transaction1,
+            transaction2,
+            transaction3,
+            transaction4,
+            transaction5,
+            transaction6,
+            transaction7,
+            transaction8,
+            transaction9,
+            transaction10,
+            transaction11
+        ]
+
+        with pytest.raises(InvalidBlockException) as excinfo:
+            block = Block.mine_with_transactions(
+                miner=user1,
+                transactions=too_many_transactions
+            )
+
+        assert excinfo.value.__str__() == "Block must contain between 5 and 10 valid transactions."
 
     @pytest.mark.skip(reason="TODO")
     def test_mining_strategy_cannot_be_biased(self):

@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from textual.app import App, ComposeResult
-from textual.containers import HorizontalScroll, Vertical, Horizontal
+from textual.containers import HorizontalScroll, Vertical, Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Static, Input, Button, ListItem, Label, ListView, Rule
 
@@ -24,7 +24,7 @@ class TransactionDetailScreen(Screen):
         .rule {
             color: orange;
         }
-        Vertical {
+        VerticalScroll {
             border: double orange;
         }
     """
@@ -35,15 +35,20 @@ class TransactionDetailScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Button("Close", id="close")
-        vertical = Vertical(
-            Label(f"Transaction hash: {self.transaction.id}", classes="tx-hash"),
+        vertical = VerticalScroll(
+            Label(f"Transaction hash: {self.transaction.hash}", classes="tx-hash"),
+            Label(f"Created at: {self.transaction.timestamp}"),
             Rule(line_style="double", classes="rule"),
             Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
             Label(f"Fee: {self.transaction.fee.quantize(Decimal('0.01'))} GCN"),
             Rule(line_style="double", classes="rule"),
-            Label(f"Created at: {self.transaction.timestamp}"),
-            Label(f"Sender: {self.transaction.sender_public_key}"),
-            Label(f"Receiver: {self.transaction.receiver_address}"),
+
+            Label(f"Sender address: {self.transaction.sender_address}"),
+            Label(f"Sender public key: {self.transaction.sender_public_key}"),
+
+            Label(f"Receiver address: {self.transaction.receiver_address}"),
+
+            Rule(line_style="double", classes="rule"),
             Label(f"Signature: {self.transaction.sender_signature}"),
             classes="transaction-detail-screen"
         )

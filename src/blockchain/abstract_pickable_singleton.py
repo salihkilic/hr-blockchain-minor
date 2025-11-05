@@ -15,11 +15,6 @@ class AbstractPickableSingleton(ABC):
         """ Initializes the singleton instance. """
         super().__init__()
         self._file_path = file_path
-
-        if self._file_path is None:
-            filesystem_service = FileSystemService()
-            self._file_path = os.path.join(filesystem_service.get_data_root(), FileSystemService.POOL_FILE_NAME)
-
         self.__class__._instance = self
 
     @property
@@ -31,7 +26,11 @@ class AbstractPickableSingleton(ABC):
         """ Creates the singleton instance of the class."""
         if cls._instance is not None:
             raise Exception("Instance already created. Use get_instance() to access it.")
-        cls(file_path)
+        saved_instance = cls.load(file_path)
+        if saved_instance is not None:
+            cls._instance = saved_instance
+        else:
+            cls(file_path)
 
     @classmethod
     def get_instance(cls):
@@ -48,11 +47,14 @@ class AbstractPickableSingleton(ABC):
             pickle.dump(instance, f)
 
     @classmethod
-    def load(cls) -> None:
+    def load(cls, file_path) -> Optional["AbstractPickableSingleton"]:
         """Load the object from disk."""
-        instance = cls.get_instance()
-        with open(instance.file_path, "rb") as f:
-            cls._instance = pickle.load(f)
+        with open(file_path, "rb") as f:
+            try:
+                instance = pickle.load(f)
+            except EOFError:
+                return None
+        return instance
 
     @classmethod
     def destroy_instance(cls, raise_exception_if_no_instance: bool = False) -> None:
@@ -61,5 +63,6 @@ class AbstractPickableSingleton(ABC):
             if raise_exception_if_no_instance:
                 raise Exception("Instance not initialized. Cannot destroy non-existent instance.")
             return
+        cls._save()
         cls._instance = None
 
