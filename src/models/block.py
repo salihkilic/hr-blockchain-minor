@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from exceptions.mining import InvalidBlockException
@@ -94,13 +95,14 @@ class Block:
         self.merkle_root = crypto_service.find_merkle_root_for_list(tx_hashes)
 
 
-
     @classmethod
     def mine_with_transactions(
             cls,
             miner: User,
             transactions: list[Transaction]
     ) -> "Block":
+
+
         # Validate all transactions
         for tx in transactions:
             try:
