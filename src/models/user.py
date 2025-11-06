@@ -12,6 +12,7 @@ import os
 from exceptions.user import DuplicateUsernameException, InvalidUserException
 
 
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -159,6 +160,12 @@ class User:
     def address(self) -> str:
         """Public account number (SHA256 of public_key)."""
         return hashlib.sha256(self.public_key.encode("utf-8")).hexdigest()
+
+    @property
+    def wallet(self) -> "Wallet":
+        """Get wallet for this user."""
+        from models import Wallet
+        return Wallet(address=self.address, owner_username=self.username, public_key=self.public_key)
 
     # ----------
     # Signatures

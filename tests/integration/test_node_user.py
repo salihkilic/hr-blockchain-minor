@@ -1,6 +1,8 @@
 import unittest
-
 import pytest
+
+from models import Wallet
+from services.user_service import UserService
 
 
 class TestNodeUser(unittest.TestCase):
@@ -8,7 +10,12 @@ class TestNodeUser(unittest.TestCase):
     @pytest.mark.skip(reason="TODO")
     def test_user_has_wallet_after_registration(self):
         """ A node user has a wallet. """
-        pass
+
+        new_user = UserService.register(username="testuser", password="testpassword")
+        user_wallet = new_user.wallet
+
+        assert user_wallet is not None
+        assert isinstance(user_wallet, Wallet)
 
     @pytest.mark.skip(reason="TODO")
     def test_user_can_send_coins_to_other_users(self):

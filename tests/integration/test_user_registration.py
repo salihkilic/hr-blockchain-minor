@@ -7,6 +7,7 @@ import pytest
 from blockchain import Pool
 from exceptions.user import DuplicateUsernameException, InvalidUserException
 from models import User, Transaction
+from models.constants import FilesAndDirectories
 from models.enum import TransactionType
 from repositories.user import UserRepository
 from services import FileSystemService
@@ -17,8 +18,8 @@ class UserRegistrationTests(unittest.TestCase):
     def setUp(self):
         """ Set up the test environment before each test case. """
         tmp_path = tempfile.TemporaryDirectory().name
-        db_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.USERS_DB_FILE_NAME)
-        pool_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.POOL_FILE_NAME)
+        db_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.USERS_DB_FILE_NAME)
+        pool_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.POOL_FILE_NAME)
 
         filesystem_service = FileSystemService(tmp_path)
         filesystem_service.initialize_data_files()

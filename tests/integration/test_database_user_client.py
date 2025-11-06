@@ -5,17 +5,17 @@ import unittest
 
 import pytest
 
+from models.constants import FilesAndDirectories
 from repositories.user import UserRepository
 from models.user import User
 from exceptions.user import DuplicateUsernameException
-from services import FileSystemService
 
 class TestDatabaseUserClient(unittest.TestCase):
 
     def setUp(self):
         """ Set up the test environment before each test case. """
         tmp_path = tempfile.TemporaryDirectory().name
-        db_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.USERS_DB_FILE_NAME)
+        db_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.USERS_DB_FILE_NAME)
 
         # Create folders
         os.makedirs(os.path.dirname(db_path), exist_ok=True)

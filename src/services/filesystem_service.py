@@ -2,16 +2,10 @@ import os
 from typing import Optional
 
 from exceptions import RequestedDirectoryDoesNotExistException, RequestedFileDoesNotExistException
+from models.constants import FilesAndDirectories
 
 
 class FileSystemService:
-
-    DATA_DIR_NAME = "data"
-    SRC_DIR_NAME = "src"
-    DATABASE_SCRIPTS_DIR_NAME = "database_scripts"
-    USERS_DB_FILE_NAME = "users.sqlite3"
-    POOL_FILE_NAME = "pool.dat"
-    LEDGER_FILE_NAME = "ledger.dat"
 
     def __init__(self, repo_root: Optional[str] = None):
         self.repo_root = repo_root
@@ -19,20 +13,20 @@ class FileSystemService:
             self.repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
     def initialize_data_files(self):
-        self.get_data_file_path(self.USERS_DB_FILE_NAME, create_if_missing=True)
-        self.get_data_file_path(self.POOL_FILE_NAME, create_if_missing=True)
-        self.get_data_file_path(self.LEDGER_FILE_NAME, create_if_missing=True)
+        self.get_data_file_path(FilesAndDirectories.USERS_DB_FILE_NAME, create_if_missing=True)
+        self.get_data_file_path(FilesAndDirectories.POOL_FILE_NAME, create_if_missing=True)
+        self.get_data_file_path(FilesAndDirectories.LEDGER_FILE_NAME, create_if_missing=True)
 
     def get_src_root(self) -> str:
         """ Returns the absolute path to the 'src' directory of the project. """
-        data_root = os.path.join(self.repo_root, self.SRC_DIR_NAME)
+        data_root = os.path.join(self.repo_root, FilesAndDirectories.SRC_DIR_NAME)
         if not self.validate_directory_exists(data_root):
             raise RequestedDirectoryDoesNotExistException(f"Src root directory does not exist: {data_root}")
         return data_root
 
     def get_data_root(self, create_if_missing: bool = False) -> str:
         """ Returns the absolute path to the 'data' directory of the project. """
-        data_root = os.path.join(self.repo_root, self.DATA_DIR_NAME)
+        data_root = os.path.join(self.repo_root, FilesAndDirectories.DATA_DIR_NAME)
 
         if not self.validate_directory_exists(data_root):
             if create_if_missing:
@@ -72,7 +66,7 @@ class FileSystemService:
     def get_sql_file_path(self, sql_filename: str) -> str:
         """ Returns the absolute path to the specified SQL file within the src/DatabaseScripts directory. Throws an exception if the directory does not exist. """
         src_root = self.get_src_root()
-        sql_dir = os.path.join(src_root, self.DATABASE_SCRIPTS_DIR_NAME)
+        sql_dir = os.path.join(src_root, FilesAndDirectories.DATABASE_SCRIPTS_DIR_NAME)
         self.validate_directory_exists(sql_dir, throw_exception=True)
         sql_path = os.path.join(sql_dir, sql_filename)
         self.validate_file_exists(sql_path, throw_exception=True)

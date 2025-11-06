@@ -1,8 +1,8 @@
 import os
 import unittest
-
 import pytest
 
+from models.constants import FilesAndDirectories
 from services import FileSystemService
 
 
@@ -14,17 +14,15 @@ def test_system_initializes_database_and_files_at_startup(tmp_path):
     filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
     filesystem_service.initialize_data_files()
 
-    tmp_data_path = os.path.join(tmp_path.as_posix(), FileSystemService.DATA_DIR_NAME)
-    db_path = os.path.join(tmp_data_path, FileSystemService.USERS_DB_FILE_NAME)
-    ledger_path = os.path.join(tmp_data_path, FileSystemService.LEDGER_FILE_NAME)
-    pool_path = os.path.join(tmp_data_path, FileSystemService.POOL_FILE_NAME)
+    tmp_data_path = os.path.join(tmp_path.as_posix(), FilesAndDirectories.DATA_DIR_NAME)
+    db_path = os.path.join(tmp_data_path, FilesAndDirectories.USERS_DB_FILE_NAME)
+    ledger_path = os.path.join(tmp_data_path, FilesAndDirectories.LEDGER_FILE_NAME)
+    pool_path = os.path.join(tmp_data_path, FilesAndDirectories.POOL_FILE_NAME)
 
     assert os.path.isdir(tmp_data_path)
     assert os.path.isfile(db_path)
     assert os.path.isfile(ledger_path)
     assert os.path.isfile(pool_path)
-
-
 
 
 @pytest.mark.integration
@@ -34,10 +32,10 @@ def test_system_creates_missing_ledger_file_on_startup(tmp_path):
     """
     filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
 
-    tmp_data_path = os.path.join(tmp_path.as_posix(), FileSystemService.DATA_DIR_NAME)
-    db_path = os.path.join(tmp_data_path, FileSystemService.USERS_DB_FILE_NAME)
-    ledger_path = os.path.join(tmp_data_path, FileSystemService.LEDGER_FILE_NAME)
-    pool_path = os.path.join(tmp_data_path, FileSystemService.POOL_FILE_NAME)
+    tmp_data_path = os.path.join(tmp_path.as_posix(), FilesAndDirectories.DATA_DIR_NAME)
+    db_path = os.path.join(tmp_data_path, FilesAndDirectories.USERS_DB_FILE_NAME)
+    ledger_path = os.path.join(tmp_data_path, FilesAndDirectories.LEDGER_FILE_NAME)
+    pool_path = os.path.join(tmp_data_path, FilesAndDirectories.POOL_FILE_NAME)
 
     # Create a subset of the required files
     os.makedirs(tmp_data_path)
@@ -62,10 +60,10 @@ def test_system_creates_missing_db_file_on_startup(tmp_path):
         """
     filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
 
-    tmp_data_path = os.path.join(tmp_path.as_posix(), FileSystemService.DATA_DIR_NAME)
-    db_path = os.path.join(tmp_data_path, FileSystemService.USERS_DB_FILE_NAME)
-    ledger_path = os.path.join(tmp_data_path, FileSystemService.LEDGER_FILE_NAME)
-    pool_path = os.path.join(tmp_data_path, FileSystemService.POOL_FILE_NAME)
+    tmp_data_path = os.path.join(tmp_path.as_posix(), FilesAndDirectories.DATA_DIR_NAME)
+    db_path = os.path.join(tmp_data_path, FilesAndDirectories.USERS_DB_FILE_NAME)
+    ledger_path = os.path.join(tmp_data_path, FilesAndDirectories.LEDGER_FILE_NAME)
+    pool_path = os.path.join(tmp_data_path, FilesAndDirectories.POOL_FILE_NAME)
 
     # Create a subset of the required files
     os.makedirs(tmp_data_path)
@@ -89,10 +87,10 @@ def test_system_creates_missing_pool_file_on_startup(tmp_path):
         """
     filesystem_service = FileSystemService(repo_root=tmp_path.absolute().as_posix())
 
-    tmp_data_path = os.path.join(tmp_path.as_posix(), FileSystemService.DATA_DIR_NAME)
-    db_path = os.path.join(tmp_data_path, FileSystemService.USERS_DB_FILE_NAME)
-    ledger_path = os.path.join(tmp_data_path, FileSystemService.LEDGER_FILE_NAME)
-    pool_path = os.path.join(tmp_data_path, FileSystemService.POOL_FILE_NAME)
+    tmp_data_path = os.path.join(tmp_path.as_posix(), FilesAndDirectories.DATA_DIR_NAME)
+    db_path = os.path.join(tmp_data_path, FilesAndDirectories.USERS_DB_FILE_NAME)
+    ledger_path = os.path.join(tmp_data_path, FilesAndDirectories.LEDGER_FILE_NAME)
+    pool_path = os.path.join(tmp_data_path, FilesAndDirectories.POOL_FILE_NAME)
 
     # Create a subset of the required files
     os.makedirs(tmp_data_path)

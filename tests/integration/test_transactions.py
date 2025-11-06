@@ -6,6 +6,7 @@ from decimal import Decimal, ROUND_DOWN
 import pytest
 
 from models import Transaction, User
+from models.constants import FilesAndDirectories
 from repositories.user import UserRepository
 from services import FileSystemService
 
@@ -15,7 +16,7 @@ class TestTransactions(unittest.TestCase):
     def setUp(self):
         """ Set up the test environment before each test case. """
         tmp_path = tempfile.TemporaryDirectory().name
-        db_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.USERS_DB_FILE_NAME)
+        db_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.USERS_DB_FILE_NAME)
 
         # Create folders
         os.makedirs(os.path.dirname(db_path), exist_ok=True)

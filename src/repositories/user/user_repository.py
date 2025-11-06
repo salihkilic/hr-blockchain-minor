@@ -5,7 +5,6 @@ from exceptions.user import DuplicateUsernameException
 from models import User
 from repositories.user.abstract_user_repository import AbstractUserRepository
 from repositories.database_connection import DatabaseConnection
-from services import FileSystemService
 
 # TODO
 #  - Centralize duplicate try exception handling

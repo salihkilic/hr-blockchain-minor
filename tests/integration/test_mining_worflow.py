@@ -10,6 +10,7 @@ from blockchain import Pool
 from blockchain.ledger import Ledger
 from exceptions.mining import InvalidBlockException
 from models import User, Transaction, Block
+from models.constants import FilesAndDirectories
 from services import FileSystemService
 
 
@@ -17,7 +18,7 @@ class TestMiningWorkflow(unittest.TestCase):
 
     def setUp(self):
         tmp_path = tempfile.TemporaryDirectory().name
-        ledger_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.LEDGER_FILE_NAME)
+        ledger_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.LEDGER_FILE_NAME)
         self.pool_file_path = ledger_file_path
 
         os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
@@ -26,10 +27,10 @@ class TestMiningWorkflow(unittest.TestCase):
         filesystem_service.initialize_data_files()
 
         Ledger.destroy_instance()
-        Ledger.create_instance(file_path=ledger_file_path)
+        Ledger.get_instance(file_path=ledger_file_path)
 
         Pool.destroy_instance()
-        Pool.create_instance(file_path=self.pool_file_path)
+        Pool.get_instance(file_path=self.pool_file_path)
 
     @pytest.mark.integration
     def test_miner_selects_between_5_and_10_valid_transactions(self):
