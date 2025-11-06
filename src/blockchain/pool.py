@@ -3,7 +3,8 @@ from typing import Optional
 
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from exceptions.mining import InvalidBlockException
-from models import Transaction, User, Block
+from models import Transaction, Block
+from models.constants import FilesAndDirectories
 from services import FileSystemService
 
 
@@ -14,7 +15,7 @@ class Pool(AbstractPickableSingleton):
         self._transactions = []
         if file_path is None:
             filesystem_service = FileSystemService()
-            file_path = os.path.join(filesystem_service.get_data_root(), FileSystemService.POOL_FILE_NAME)
+            file_path = os.path.join(filesystem_service.get_data_root(), FilesAndDirectories.POOL_FILE_NAME)
         super().__init__(file_path)
 
     def add_transaction(self, transaction: Transaction) -> None:
@@ -74,7 +75,7 @@ class Pool(AbstractPickableSingleton):
     def load(cls, file_path) -> Optional["AbstractPickableSingleton"]:
         if file_path is None:
             filesystem_service = FileSystemService()
-            file_path = os.path.join(filesystem_service.get_data_root(), FileSystemService.POOL_FILE_NAME)
+            file_path = os.path.join(filesystem_service.get_data_root(), FilesAndDirectories.POOL_FILE_NAME)
         return super().load(file_path)
 
     @classmethod

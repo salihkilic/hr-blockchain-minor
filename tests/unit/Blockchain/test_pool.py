@@ -7,6 +7,7 @@ from _pytest.tmpdir import tmp_path
 
 from blockchain import Pool
 from models import User, Transaction
+from models.constants import FilesAndDirectories
 from services import FileSystemService
 
 
@@ -14,7 +15,7 @@ class MyTestCase(unittest.TestCase):
 
     def setUp(self):
         tmp_path = tempfile.TemporaryDirectory().name
-        pool_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.POOL_FILE_NAME)
+        pool_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.POOL_FILE_NAME)
         self.pool_file_path = pool_file_path
 
         os.makedirs(os.path.dirname(pool_file_path), exist_ok=True)

@@ -7,6 +7,7 @@ import pytest
 
 from blockchain.ledger import Ledger
 from models import User, Transaction, Block
+from models.constants import FilesAndDirectories
 from services import FileSystemService
 
 
@@ -14,7 +15,7 @@ class TestLedger(unittest.TestCase):
 
     def setUp(self):
         tmp_path = tempfile.TemporaryDirectory().name
-        ledger_file_path = os.path.join(tmp_path, FileSystemService.DATA_DIR_NAME, FileSystemService.LEDGER_FILE_NAME)
+        ledger_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.LEDGER_FILE_NAME)
         self.pool_file_path = ledger_file_path
 
         os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
