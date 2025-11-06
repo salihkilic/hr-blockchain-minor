@@ -47,6 +47,9 @@ class Ledger(AbstractPickableSingleton):
 
         return blocks
 
+    def get_all_blocks(self) -> list[Block]:
+        return list(self._blocks.values())
+
     def add_block(self, block: Block) -> None:
         self._blocks[block.hash] = block
         self._latest_block = block

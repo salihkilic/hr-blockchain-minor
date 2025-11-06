@@ -15,7 +15,7 @@ class AbstractPickableSingleton(ABC):
         """ Initializes the singleton instance. """
         super().__init__()
         self._file_path = file_path if file_path is not None else os.path.join(
-            self._fs_service.get_data_root(), f"{self.__class__.__name__.lower()}.pkl")
+            self._fs_service.get_data_root(), f"{self.__class__.__name__.lower()}.dat")
         self.__class__._instance = self
 
     @property
