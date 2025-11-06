@@ -12,3 +12,9 @@ class UserService:
         if user and user.verify_password(password):
             return user
         return None
+
+    def register(self, username:str, password:str) -> User:
+        user = User.create(username, password)
+        self.repo.persist(user)
+        return user
+
