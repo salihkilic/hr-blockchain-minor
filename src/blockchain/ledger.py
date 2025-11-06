@@ -25,6 +25,13 @@ class Ledger(AbstractPickableSingleton):
     def get_block(self, hash: str) -> Optional[Block]:
         return self._blocks.get(hash, None)
 
+    def get_block_by_number(self, number: int) -> Optional[Block]:
+        """ Get a block by its number."""
+        for block in self._blocks.values():
+            if block.number == number:
+                return block
+        return None
+
     def get_n_blocks(self, n: int) -> list[Block]:
 
         # Invalid input

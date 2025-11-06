@@ -90,12 +90,22 @@ class Transaction(AbstractHashableModel):
     def create_mining_reward(
             cls,
             receiver_address: str,
-            block_nr: int
+            transactions_to_be_mined: list[Transaction],
     ):
-        # TODO
-        #  If there is already a mining reward in the block, raise an error
-        #  If there are fees from other transactions in the block, include them in the reward
-        pass
+        reward_amount = Decimal(50)  # Base reward
+
+        for tx in transactions_to_be_mined:
+            if tx.kind == TransactionType.TRANSFER:
+                reward_amount += tx.fee
+
+        return Transaction(
+            receiver_address=receiver_address,
+            amount=reward_amount,
+            fee=Decimal.from_float(0),
+            kind=TransactionType.MINING_REWARD,
+        )
+
+
 
     @classmethod
     def create_signup_reward(
@@ -119,31 +129,35 @@ class Transaction(AbstractHashableModel):
             raise ValueError("Sender signature is not set.")
         return f"{self.canonicalize()}|{self.sender_signature}|{self.hash}"
 
-    def validate(self):
+    def validate(self, raise_exception: bool = True) -> bool:
         """ Validates the transaction content and signature. Raises exception if invalid. """
         match self.kind:
             case TransactionType.TRANSFER:
-                self._validate_transfer()
+                return self._validate_transfer()
             case TransactionType.MINING_REWARD:
-                self._validate_mining_reward()
+                return self._validate_mining_reward()
             case TransactionType.SIGNUP_REWARD:
-                self._validate_signup_reward()
+                return self._validate_signup_reward()
             case _:
                 raise ValueError(f"Unknown transaction type: {self.kind}")
 
-    def _validate_transfer(self):
+    def _validate_transfer(self, raise_exception: bool = True) -> bool:
 
         # TODO Validate spender has sufficient funds
         # TODO Mark transaction as invalid when necessary
 
         senders_public_key = self.sender_public_key
         if not senders_public_key:
-            raise InvalidTransactionException("Sender's public key is missing.")
+            if raise_exception:
+                raise InvalidTransactionException("Sender's public key is missing.")
+            return False
 
         signature = self.sender_signature
 
         if not signature:
-            raise InvalidTransactionException("Transaction signature is missing.")
+            if raise_exception:
+                raise InvalidTransactionException("Transaction signature is missing.")
+            return False
 
         valid = self.cryptography_service.validate_signature(
             message=self.canonicalize(),
@@ -152,10 +166,14 @@ class Transaction(AbstractHashableModel):
         )
 
         if not valid:
-            raise InvalidTransactionException("Invalid transaction signature.")
+            if raise_exception:
+                raise InvalidTransactionException("Invalid transaction signature.")
+            return False
 
-    def _validate_mining_reward(self):
+        return True
+
+    def _validate_mining_reward(self) -> bool:
         raise NotImplementedError("Mining reward validation not implemented yet.")
 
-    def _validate_signup_reward(self):
+    def _validate_signup_reward(self) -> bool:
         raise NotImplementedError("Signup reward validation not implemented yet.")

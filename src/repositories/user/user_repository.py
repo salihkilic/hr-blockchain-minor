@@ -6,8 +6,6 @@ from models import User
 from repositories.user.abstract_user_repository import AbstractUserRepository
 from repositories.database_connection import DatabaseConnection
 
-# TODO
-#  - Centralize duplicate try exception handling
 class UserRepository(AbstractUserRepository, DatabaseConnection):
 
     def __init__(self, db_file_path: Optional[str] = None):

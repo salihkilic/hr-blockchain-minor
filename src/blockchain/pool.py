@@ -33,11 +33,7 @@ class Pool(AbstractPickableSingleton):
         if len(self.get_instance()._transactions) < 5:
             return None
 
-        # TODO
-        #  Filter out invalid transactions
-
-
-        all_transactions = self.get_instance()._transactions
+        all_transactions = [tx for tx in self.get_instance()._transactions if tx.validate(raise_exception=False)]
 
         if max_timestamp is not None:
             all_transactions = [tx for tx in all_transactions if tx.timestamp <= max_timestamp]
@@ -83,4 +79,3 @@ class Pool(AbstractPickableSingleton):
         # Only override for type hinting purposes
         """ Get the singleton instance of the Pool."""
         return super().get_instance(file_path)
-
