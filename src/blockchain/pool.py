@@ -79,8 +79,8 @@ class Pool(AbstractPickableSingleton):
         return super().load(file_path)
 
     @classmethod
-    def get_instance(cls) -> "Pool":
+    def get_instance(cls, file_path: Optional[str] = None) -> "Pool":
         # Only override for type hinting purposes
         """ Get the singleton instance of the Pool."""
-        return super().get_instance()
+        return super().get_instance(file_path)
 

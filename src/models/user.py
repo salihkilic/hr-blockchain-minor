@@ -10,7 +10,7 @@ import hashlib
 import os
 
 from exceptions.user import DuplicateUsernameException, InvalidUserException
-from models import Wallet
+
 
 
 def _now_iso() -> str:
@@ -164,6 +164,7 @@ class User:
     @property
     def wallet(self) -> "Wallet":
         """Get wallet for this user."""
+        from models import Wallet
         return Wallet(address=self.address, owner_username=self.username, public_key=self.public_key)
 
     # ----------

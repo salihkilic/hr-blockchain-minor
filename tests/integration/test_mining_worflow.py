@@ -27,10 +27,10 @@ class TestMiningWorkflow(unittest.TestCase):
         filesystem_service.initialize_data_files()
 
         Ledger.destroy_instance()
-        Ledger.create_instance(file_path=ledger_file_path)
+        Ledger.get_instance(file_path=ledger_file_path)
 
         Pool.destroy_instance()
-        Pool.create_instance(file_path=self.pool_file_path)
+        Pool.get_instance(file_path=self.pool_file_path)
 
     @pytest.mark.integration
     def test_miner_selects_between_5_and_10_valid_transactions(self):
