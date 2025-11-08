@@ -12,14 +12,14 @@ class TestLedger(unittest.TestCase):
         """
         pass
 
-    @pytest.mark.skip(reason="TODO")
+    @pytest.mark.skip(reason="This is tested in tests for mining workflow")
     def test_block_transaction_count_minimum_five(self):
         """
         Every block must contain a minimum of 5 transactions, including reward transactions.
         """
         pass
 
-    @pytest.mark.skip(reason="TODO")
+    @pytest.mark.skip(reason="This is tested in tests for mining workflow")
     def test_block_transaction_count_maximum_ten(self):
         """
         Every block must contain a maximum of 10 transactions, including reward transactions.

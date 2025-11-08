@@ -2,40 +2,46 @@ import os
 import tempfile
 import unittest
 from decimal import Decimal, ROUND_DOWN
+from unittest.mock import patch
 
 from _pytest.tmpdir import tmp_path
 
 from blockchain import Pool
 from models import User, Transaction
 from models.constants import FilesAndDirectories
-from services import FileSystemService
+from services import FileSystemService, InitializationService
 
 
-class MyTestCase(unittest.TestCase):
+class TestPool(unittest.TestCase):
 
-    def setUp(self):
-        tmp_path = tempfile.TemporaryDirectory().name
-        pool_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.POOL_FILE_NAME)
-        self.pool_file_path = pool_file_path
+    _user_addresses = {}
 
-        os.makedirs(os.path.dirname(pool_file_path), exist_ok=True)
-
-        filesystem_service = FileSystemService()
-        filesystem_service.create_file(pool_file_path)
-
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
         Pool.destroy_instance()
-        Pool.create_instance(file_path=pool_file_path)
+        self.__class__._user_addresses = {}
 
-    def test_pool_saving_to_disk(self):
-        user1 = User.create_for_test("sender", "password")
-        user2 = User.create_for_test("receiver", "password")
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    @patch("repositories.user.UserRepository.find_by_address",
+           side_effect=lambda address: TestPool._user_addresses.get(address))
+    @patch("models.wallet.Wallet.balance", new_callable=lambda: Decimal("10000.0"))
+    def test_pool_saving_to_disk(self, mock_balance, mock_find_by_address, mock_get_data_root):
+        user1 = User.create("sender", "password")
+        user2 = User.create("receiver", "password")
+
+        self.__class__._user_addresses[user1.address] = user1
+        self.__class__._user_addresses[user2.address] = user2
+
         transaction = Transaction.create(user1, user2.address, Decimal(10.0), Decimal(0.1))
 
         Pool.get_instance().add_transaction(transaction)
 
         # Reload the pool from disk
         Pool.destroy_instance()
-        Pool.create_instance(file_path=self.pool_file_path)
         reloaded_pool = Pool.get_instance()
         transactions = reloaded_pool.get_transactions()
 

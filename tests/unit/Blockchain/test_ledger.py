@@ -2,35 +2,42 @@ import os
 import tempfile
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 
 from blockchain.ledger import Ledger
 from models import User, Transaction, Block
 from models.constants import FilesAndDirectories
-from services import FileSystemService
+from services import FileSystemService, InitializationService
 
 
 class TestLedger(unittest.TestCase):
 
-    def setUp(self):
-        tmp_path = tempfile.TemporaryDirectory().name
-        ledger_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.LEDGER_FILE_NAME)
-        self.pool_file_path = ledger_file_path
+    _user_addresses = {}
 
-        os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
-
-        filesystem_service = FileSystemService()
-        filesystem_service.create_file(ledger_file_path)
-
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
         Ledger.destroy_instance()
-        Ledger.create_instance(file_path=ledger_file_path)
+        self.__class__._user_addresses = {}
 
     @pytest.mark.unit
-    def test_with_transactions(self):
-        user1 = User.create_for_test("user1", "password1") # Wallet 50
-        user2 = User.create_for_test("user2", "password2") # Wallet 50
-        user3 = User.create_for_test("user3", "password3") # Wallet 50
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    @patch("repositories.user.UserRepository.find_by_address",
+           side_effect=lambda address: TestLedger._user_addresses.get(address))
+    @patch("models.wallet.Wallet.balance", new_callable=lambda: Decimal("10000.0"))
+    def test_with_transactions(self, mock_balance, mock_find_by_address, mock_get_data_root):
+        user1 = User.create("user1", "password1") # Wallet 50
+        user2 = User.create("user2", "password2") # Wallet 50
+        user3 = User.create("user3", "password3") # Wallet 50
+
+        self.__class__._user_addresses[user1.address] = user1
+        self.__class__._user_addresses[user2.address] = user2
+        self.__class__._user_addresses[user3.address] = user3
 
         transactions = [
             Transaction.create(user1, user2.address, Decimal(10), Decimal(0.1)),  # user1 (50, 39.9) -> user2 (60.1)
@@ -54,7 +61,6 @@ class TestLedger(unittest.TestCase):
 
         # Destroy and reload the ledger to verify persistence
         Ledger.destroy_instance()
-        Ledger.create_instance(file_path=self.pool_file_path)
         reloaded_latest_block = Ledger.get_instance().get_latest_block()
         self.assertIsNotNone(reloaded_latest_block)
         self.assertEqual(reloaded_latest_block.calculated_hash, block.calculated_hash)

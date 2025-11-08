@@ -1,44 +1,34 @@
-import os
-import tempfile
 import unittest
 from datetime import datetime, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 
 from blockchain import Pool
-from blockchain.ledger import Ledger
 from exceptions.mining import InvalidBlockException
 from models import User, Transaction, Block
-from models.constants import FilesAndDirectories
-from services import FileSystemService
+from services import FileSystemService, InitializationService
 
 
 class TestMiningWorkflow(unittest.TestCase):
 
-    def setUp(self):
-        tmp_path = tempfile.TemporaryDirectory().name
-        ledger_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.LEDGER_FILE_NAME)
-        self.pool_file_path = ledger_file_path
-
-        os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
-
-        filesystem_service = FileSystemService(repo_root=tmp_path)
-        filesystem_service.initialize_data_files()
-
-        Ledger.destroy_instance()
-        Ledger.get_instance(file_path=ledger_file_path)
-
-        Pool.destroy_instance()
-        Pool.get_instance(file_path=self.pool_file_path)
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
 
     @pytest.mark.integration
-    def test_miner_selects_between_5_and_10_valid_transactions(self):
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    @patch("models.transaction.Transaction.validate", return_value=True)
+    def test_miner_selects_between_5_and_10_valid_transactions(self, mock_get_data_root, mock_transaction_validate):
         """
         Miner must choose minimum 5 and maximum 10 valid transactions from the pool.
         """
-        user1 = User.create_for_test("miner1", "password1")
-        user2 = User.create_for_test("user2", "password2")
+        user1 = User.create("miner1", "password1")
+        user2 = User.create("user2", "password2")
 
         transaction1 = Transaction.create(user1, user2.address, Decimal(10.0), fee=Decimal(0.1))
         transaction2 = Transaction.create(user2, user1.address, Decimal(5.0), fee=Decimal(0.05))
@@ -102,14 +92,17 @@ class TestMiningWorkflow(unittest.TestCase):
         assert excinfo.value.__str__() == "Block must contain between 5 and 10 valid transactions."
 
     @pytest.mark.integration
-    def test_mining_strategy_cannot_be_biased(self):
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    @patch("models.transaction.Transaction.validate", return_value=True)
+    def test_mining_strategy_cannot_be_biased(self, mock_get_data_root, mock_transaction_validate):
         """
         Miner cannot exclusively choose their own transactions or ignore zero-fee/low-fee ones permanently.
         Strategy must eventually include all valid pool transactions.
         """
 
-        user1 = User.create_for_test("miner1", "password1")
-        user2 = User.create_for_test("user2", "password2")
+        user1 = User.create("miner1", "password1")
+        user2 = User.create("user2", "password2")
 
         transactions = [
             Transaction.create(user1, user2.address, Decimal(10.0), fee=Decimal(0.1)),

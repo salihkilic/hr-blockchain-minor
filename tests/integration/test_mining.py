@@ -1,6 +1,7 @@
 import os
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 import tempfile
@@ -10,35 +11,27 @@ from blockchain.ledger import Ledger
 from exceptions.mining import InvalidBlockException
 from models import Block, User, Transaction
 from models.constants import FilesAndDirectories
-from services import FileSystemService
+from services import FileSystemService, InitializationService
 
 
 class TestMining(unittest.TestCase):
 
-    def setUp(self):
-        tmp_path = tempfile.TemporaryDirectory().name
-        ledger_file_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.LEDGER_FILE_NAME)
-        self.pool_file_path = ledger_file_path
+    @patch("services.filesystem_service.FileSystemService.get_data_root", side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
 
-        os.makedirs(os.path.dirname(ledger_file_path), exist_ok=True)
-
-        filesystem_service = FileSystemService(repo_root=tmp_path)
-        filesystem_service.initialize_data_files()
-
-        Ledger.destroy_instance()
-        Ledger.get_instance(file_path=ledger_file_path)
-
-        Pool.destroy_instance()
-        Pool.get_instance(file_path=self.pool_file_path)
-
-
-    def test_block_mining_requires_minimum_five_valid_transactions(self):
+    @pytest.mark.integration
+    @patch("repositories.user.UserRepository.username_exists", return_value=False)
+    @patch("services.filesystem_service.FileSystemService.get_data_root", side_effect=FileSystemService.get_temp_data_root)
+    @patch("models.transaction.Transaction.validate", return_value=True)
+    def test_block_mining_requires_minimum_five_valid_transactions(self, mock_username_exists, mock_get_data_root, mock_transaction_validate):
         """
         A new block could be mined, if there are a minimum of 5 valid transactions on the pool.
         """
-        sender = User.create_for_test("dummy_sender", "dummy_sender_pass")
-        receiver = User.create_for_test("dummy_receiver", "dummy_receiver_pass")
-        miner = User.create_for_test("dummy_miner", "dummy_miner_pass")
+        sender = User.create("dummy_sender", "dummy_sender_pass")
+        receiver = User.create("dummy_receiver", "dummy_receiver_pass")
+        miner = User.create("dummy_miner", "dummy_miner_pass")
 
         # Too few transactions
         with pytest.raises(InvalidBlockException):

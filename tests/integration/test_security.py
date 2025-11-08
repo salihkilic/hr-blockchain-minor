@@ -1,32 +1,24 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
+
 import pytest
 
 from models.constants import FilesAndDirectories
 from repositories.user import UserRepository
-from services import CryptographyService
+from services import CryptographyService, InitializationService, FileSystemService
 
 
 class TestSecurity(unittest.TestCase):
 
-
-    def setUp(self):
-        """ Set up the test environment before each test case. """
-        tmp_path = tempfile.TemporaryDirectory().name
-        db_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.USERS_DB_FILE_NAME)
-
-        # Create folders
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-
-        # Create the empty DB file
-        open(db_path, 'a').close()
-
-        user_repository = UserRepository(db_file_path=db_path)
-        user_repository.setup_database_structure()
-        self.user_repository = user_repository
-        self.db_path = db_path
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
         self.crypto_service = CryptographyService()
+        self.user_repository = UserRepository()
 
     def test_sha256_is_used_for_hashing(self):
         """
@@ -43,7 +35,9 @@ class TestSecurity(unittest.TestCase):
 
         assert expected_hash == actual_hash
 
-    def test_password_is_stored_as_hash(self):
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def test_password_is_stored_as_hash(self, mock_get_data_root):
         """
         A password must be saved in the form of a hash in the system.
         """
@@ -53,7 +47,7 @@ class TestSecurity(unittest.TestCase):
         username = "testuser"
         password = "securepassword123"
 
-        user = User.create(username, password, user_db_path=self.db_path)
+        user = User.create(username, password)
         self.user_repository.persist(user)
 
         # Check our normal assumptions about password storage
@@ -73,7 +67,10 @@ class TestSecurity(unittest.TestCase):
         """
         pass
 
-    def test_username_or_hashed_public_key_is_used_as_account_number(self):
+    @pytest.mark.integration
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def test_username_or_hashed_public_key_is_used_as_account_number(self, mock_get_data_root):
         """
         A username (or hashed unique public key) must be used as the public account number of a user for any transaction.
         """
@@ -82,7 +79,7 @@ class TestSecurity(unittest.TestCase):
         username = "accountuser"
         password = "anothersecurepassword"
 
-        user = User.create(username, password, user_db_path=self.db_path)
+        user = User.create(username, password)
         self.user_repository.persist(user)
 
         fetched_user = self.user_repository.find_by_username(username)

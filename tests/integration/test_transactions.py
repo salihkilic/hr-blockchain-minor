@@ -2,40 +2,33 @@ import os
 import tempfile
 import unittest
 from decimal import Decimal, ROUND_DOWN
+from unittest.mock import patch
 
 import pytest
 
 from models import Transaction, User
 from models.constants import FilesAndDirectories
 from repositories.user import UserRepository
-from services import FileSystemService
+from services import FileSystemService, InitializationService
 
 
 class TestTransactions(unittest.TestCase):
 
-    def setUp(self):
-        """ Set up the test environment before each test case. """
-        tmp_path = tempfile.TemporaryDirectory().name
-        db_path = os.path.join(tmp_path, FilesAndDirectories.DATA_DIR_NAME, FilesAndDirectories.USERS_DB_FILE_NAME)
-
-        # Create folders
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-
-        # Create the empty DB file
-        open(db_path, 'a').close()
-
-        user_repository = UserRepository(db_file_path=db_path)
-        user_repository.setup_database_structure()
-        self.user_repository = user_repository
-        self.db_path = db_path
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
 
     @pytest.mark.integration
-    def test_transaction_can_have_fee_value(self):
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def test_transaction_can_have_fee_value(self, mock_get_data_root):
         """
         An extra value could be placed on a transaction as transaction fee.
         """
-        user1 = User.create("tom", "geheim", user_db_path=self.db_path)
-        user2 = User.create("salih", "geheim", user_db_path=self.db_path)
+        user1 = User.create("tom", "geheim")
+        user2 = User.create("salih", "geheim")
 
         tx_without_fee = Transaction.create(user1, user2.address, Decimal(10.0), fee=Decimal(0))
 

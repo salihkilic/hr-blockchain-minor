@@ -1,17 +1,27 @@
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
 from models import User, Transaction
 from models.enum import TransactionType
+from services import FileSystemService, InitializationService
 
 
 class TestTransactionModel(unittest.TestCase):
 
-    def test_create_mining_reward(self):
-        user1 = User.create_for_test("node1", "password")
-        user2 = User.create_for_test("node2", "password")
-        user3 = User.create_for_test("node3", "password")
-        user4 = User.create_for_test("node4", "password")
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def setUp(self, mock_get_data_root):
+        FileSystemService.clear_temp_data_root()
+        InitializationService.initialize_application()
+
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def test_create_mining_reward(self, mock_get_data_root):
+        user1 = User.create("node1", "password")
+        user2 = User.create("node2", "password")
+        user3 = User.create("node3", "password")
+        user4 = User.create("node4", "password")
 
         transactions_to_be_mined = [
             Transaction.create(
