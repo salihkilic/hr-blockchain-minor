@@ -5,21 +5,26 @@ from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from exceptions.mining import InvalidBlockException
 from models import Transaction, Block
 from models.constants import FilesAndDirectories
-from services import FileSystemService
 
 
 class Pool(AbstractPickableSingleton):
     _transactions: list[Transaction]
 
-    def __init__(self, file_path: Optional[str] = None):
+    def __init__(self):
         self._transactions = []
-        if file_path is None:
-            filesystem_service = FileSystemService()
-            file_path = os.path.join(filesystem_service.get_data_root(), FilesAndDirectories.POOL_FILE_NAME)
-        super().__init__(file_path)
+        super().__init__()
 
     def add_transaction(self, transaction: Transaction) -> None:
+        transaction.validate()
         self.get_instance()._transactions.append(transaction)
+        self._save()
+
+    def remove_transaction(self, transaction: Transaction) -> None:
+        self.get_instance()._transactions.remove(transaction)
+        self._save()
+
+    def remove_transactions(self, transactions: list[Transaction]) -> None:
+        self.get_instance()._transactions = [tx for tx in self.get_instance()._transactions if tx not in transactions]
         self._save()
 
     def get_transactions(self) -> list[Transaction]:
@@ -68,14 +73,11 @@ class Pool(AbstractPickableSingleton):
                 raise InvalidBlockException("Block must include at least one transaction not created by the miner.")
 
     @classmethod
-    def load(cls, file_path) -> Optional["AbstractPickableSingleton"]:
-        if file_path is None:
-            filesystem_service = FileSystemService()
-            file_path = os.path.join(filesystem_service.get_data_root(), FilesAndDirectories.POOL_FILE_NAME)
-        return super().load(file_path)
+    def load(cls) -> Optional["AbstractPickableSingleton"]:
+        return super().load()
 
     @classmethod
-    def get_instance(cls, file_path: Optional[str] = None) -> "Pool":
+    def get_instance(cls) -> "Pool":
         # Only override for type hinting purposes
         """ Get the singleton instance of the Pool."""
-        return super().get_instance(file_path)
+        return super().get_instance()

@@ -2,11 +2,6 @@ from decimal import Decimal
 
 from textual.app import App
 
-from blockchain import Pool
-from blockchain.ledger import Ledger
-from models import User, Transaction
-from repositories.user import UserRepository
-from services import FileSystemService
 from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen, TransactionCreateScreen, \
     BlockMineScreen, BlockMiningScreen
 from ui.screens.user import UserDashboardScreen, UserLoginScreen, UserRegisterScreen
@@ -31,15 +26,8 @@ class BlockchainApp(App):
     }
 
     def on_mount(self) -> None:
-        filesystem_service = FileSystemService()
-        filesystem_service.initialize_data_files()
-
-        user_repository = UserRepository()
-        user_repository.setup_database_structure()
-
-        Pool.create_instance()
-        Ledger.create_instance()
-
+        from services import InitializationService
+        InitializationService.initialize_application()
         self.switch_mode("blockchain_explorer")
 
 

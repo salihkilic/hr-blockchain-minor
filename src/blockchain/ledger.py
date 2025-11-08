@@ -4,20 +4,25 @@ from typing import Optional
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from models import Block
 from models.constants import FilesAndDirectories
-from services import FileSystemService
 
 
 class Ledger(AbstractPickableSingleton):
 
     # Hash - Block pairs
-    _blocks: dict[str, "Block"] = {}
-    _latest_block: Optional[Block] = None
+    _blocks: dict[str, "Block"]
+    _latest_block: Optional[Block]
 
-    def __init__(self, file_path: Optional[str] = None):
-        if file_path is None:
-            filesystem_service = FileSystemService()
-            file_path = os.path.join(filesystem_service.get_data_root(), FilesAndDirectories.POOL_FILE_NAME)
-        super().__init__(file_path)
+    def __init__(self):
+        self._blocks = {}
+        self._latest_block = None
+        super().__init__()
+        self._initialize()
+
+    def _initialize(self) -> None:
+        """ Initialize the ledger with the genesis block if empty."""
+        if not self._blocks:
+            genesis_block = Block.create_genesis_block()
+            self.add_block(genesis_block)
 
     def get_latest_block(self) -> Optional[Block]:
         return self._latest_block
@@ -58,19 +63,18 @@ class Ledger(AbstractPickableSingleton):
         return list(self._blocks.values())
 
     def add_block(self, block: Block) -> None:
-        self._blocks[block.hash] = block
+        self._blocks[block.calculated_hash] = block
         self._latest_block = block
+        from blockchain import Pool
+        Pool.get_instance().remove_transactions(block.transactions)
         self._save()
 
     @classmethod
-    def load(cls, file_path) -> Optional["AbstractPickableSingleton"]:
-        if file_path is None:
-            filesystem_service = FileSystemService()
-            file_path = os.path.join(filesystem_service.get_data_root(), FilesAndDirectories.LEDGER_FILE_NAME)
-        return super().load(file_path)
+    def load(cls) -> Optional["AbstractPickableSingleton"]:
+        return super().load()
 
     @classmethod
-    def get_instance(cls, file_path: Optional[str] = None) -> "Ledger":
+    def get_instance(cls) -> "Ledger":
         # Only override for type hinting purposes
         """ Get the singleton instance of the Ledger."""
         return super().get_instance()

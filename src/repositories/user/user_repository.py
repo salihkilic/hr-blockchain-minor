@@ -8,8 +8,8 @@ from repositories.database_connection import DatabaseConnection
 
 class UserRepository(AbstractUserRepository, DatabaseConnection):
 
-    def __init__(self, db_file_path: Optional[str] = None):
-        super().__init__(db_file_path)
+    def __init__(self):
+        super().__init__()
 
     def setup_database_structure(self) -> None:
         self._db_connect()
@@ -45,9 +45,10 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                     private_key, 
                     key_type, 
                     recovery_phrase, 
-                    created_at
+                    created_at,
+                    address
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.username,
@@ -58,6 +59,7 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                     user.key_type,
                     user.recovery_phrase,
                     user.created_at,
+                    user.address
                 ),
             )
             self._db_connection.commit()
@@ -80,7 +82,8 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                        private_key,
                        key_type,
                        recovery_phrase,
-                       created_at
+                       created_at,
+                       address
                 FROM users
                 WHERE username = ?
                 """,
@@ -94,6 +97,33 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
 
         return self.hydrate(row) if row else None
 
+    def find_by_address(self, address):
+        self._db_connect()
+
+        try:
+            cursor = self._db_connection.execute(
+                """
+                SELECT username,
+                       password_hash,
+                       salt,
+                       public_key,
+                       private_key,
+                       key_type,
+                       recovery_phrase,
+                       created_at,
+                       address
+                FROM users
+                WHERE address = ?
+                """,
+                (address,), )
+            row = cursor.fetchone()
+        except Exception as e:
+            self._db_close()
+            raise e
+
+        self._db_close()
+
+        return self.hydrate(row) if row else None
 
     def find_all(self, limit: int = 100, offset: int = 0) -> List[User]:
         self._db_connect()
@@ -108,7 +138,8 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                        private_key,
                        key_type,
                        recovery_phrase,
-                       created_at
+                       created_at,
+                       address
                 FROM users
                 ORDER BY created_at
                 LIMIT ? OFFSET ?
@@ -137,7 +168,8 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                     private_key = ?,
                     key_type = ?,
                     recovery_phrase = ?,
-                    created_at = ?
+                    created_at = ?,
+                    address = ?
                 WHERE username = ?
                 """,
                 (
@@ -148,6 +180,7 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
                     user.key_type,
                     user.recovery_phrase,
                     user.created_at,
+                    user.address,
                     user.username,
                 ),
             )

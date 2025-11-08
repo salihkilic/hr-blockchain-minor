@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS users (
                 private_key TEXT NOT NULL,
                 key_type TEXT NOT NULL,
                 recovery_phrase TEXT,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                address TEXT
             )

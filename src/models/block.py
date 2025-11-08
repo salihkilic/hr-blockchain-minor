@@ -117,14 +117,36 @@ class Block:
         ledger = Ledger.get_instance()
         previous_block = ledger.get_latest_block()
 
+        if previous_block.calculated_hash is None:
+            raise InvalidBlockException("Previous block has no calculated hash.")
+
         block = cls(
             number=1,
             miner_address=miner.address,
             version=1,
             difficulty=0,
-            previous_hash=previous_block.hash if previous_block else None,
+            previous_hash=previous_block.calculated_hash,
             nonce=0,
             transactions=transactions
+        )
+
+        from services import CryptographyService
+        crypto_service = CryptographyService()
+
+        block.hash = crypto_service.sha256_hash(block.canonicalize())
+
+        return block
+
+    @classmethod
+    def create_genesis_block(cls) -> "Block":
+        block = cls(
+            number=0,
+            miner_address="",
+            version=1,
+            difficulty=0,
+            previous_hash=None,
+            nonce=0,
+            transactions=[]
         )
 
         from services import CryptographyService

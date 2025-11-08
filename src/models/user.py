@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from dataclasses import dataclass, field
@@ -53,8 +55,7 @@ class User:
         username: str,
         password: str,
         *,
-        recovery_phrase: Optional[str] = None,
-        user_db_path: Optional[str] = None
+        recovery_phrase: Optional[str] = None
     ) -> "User":
         """
         Factory method to create a new user with a fresh Ed25519 keypair and hashed password.
@@ -67,7 +68,7 @@ class User:
             raise InvalidUserException(message="Password cannot be empty.", field="password")
 
         from repositories.user.user_repository import UserRepository
-        user_repository = UserRepository(db_file_path=user_db_path)
+        user_repository = UserRepository()
         if user_repository.username_exists(username):
             raise DuplicateUsernameException(f"Username '{username}' already exists.")
 
@@ -104,12 +105,14 @@ class User:
         )
 
     @classmethod
+    @warnings.deprecated("create_for_test is deprecated. Use mocking instead.")
     def create_for_test(
             cls,
             username: str,
             password: str
     ) -> "User":
         """
+        DEPRECATED Use mocking instead, example in test_transaction_validation.test_miner_detects_invalid_funds_transaction_as_invalid
         Factory method to create a new user with a fresh Ed25519 keypair and hashed password. Skips DB checks.
         """
 

@@ -2,20 +2,15 @@ import sqlite3
 from abc import abstractmethod
 from typing import Optional
 
-from exceptions import RequestedFileDoesNotExistException
-from services import FileSystemService
-
 
 class DatabaseConnection:
 
     def __init__(self, db_file_path: Optional[str] = None):
         # Injected services
+        from services import FileSystemService
         self.FileSystemService = FileSystemService()
 
-        if db_file_path is not None:
-            self.FileSystemService.validate_file_exists(db_file_path, throw_exception=True)
-        else:
-            db_file_path = self.FileSystemService.get_data_file_path("users.sqlite3")
+        db_file_path = self.FileSystemService.get_data_file_path("users.sqlite3")
 
         self.db_path = db_file_path
         self._db_connection: sqlite3.Connection | None = None

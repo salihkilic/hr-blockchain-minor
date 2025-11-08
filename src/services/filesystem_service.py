@@ -7,6 +7,8 @@ from models.constants import FilesAndDirectories
 
 class FileSystemService:
 
+    _tmp_data_root: Optional[str] = None
+
     def __init__(self, repo_root: Optional[str] = None):
         self.repo_root = repo_root
         if repo_root is None:
@@ -92,3 +94,21 @@ class FileSystemService:
                 pass
         except Exception as e:
             raise IOError(f"Failed to create file: {file_path}") from e
+
+    @classmethod
+    def get_temp_data_root(cls, create_if_missing: bool = False) -> str:
+        """ Returns the absolute path to a temporary data directory for testing purposes. """
+        if cls._tmp_data_root is not None:
+            return cls._tmp_data_root
+
+        import tempfile
+        temp_dir = tempfile.TemporaryDirectory().name
+        data_root = os.path.join(temp_dir, FilesAndDirectories.DATA_DIR_NAME)
+        os.makedirs(data_root, exist_ok=True)
+        cls._tmp_data_root = data_root
+        return data_root
+
+    @classmethod
+    def clear_temp_data_root(cls):
+        """ Clears the temporary data root path. """
+        cls._tmp_data_root = None

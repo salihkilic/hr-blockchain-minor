@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 from typing import Optional
 from decimal import Decimal, ROUND_DOWN, getcontext
 
-from exceptions.transaction import InvalidTransactionException
+from exceptions.transaction import InvalidTransactionException, InsufficientBalanceException
+from .wallet import Wallet
 from .abstract_hashable_model import AbstractHashableModel
 from .user import User
 from .enum.transaction_type import TransactionType
-from services import CryptographyService
 
 
 @dataclass
@@ -43,6 +43,7 @@ class Transaction(AbstractHashableModel):
             sender_public_key: Optional[str] = None,
             sender_signature: Optional[str] = None,
     ):
+        from services import CryptographyService
         cryptography_service = CryptographyService()
         self.cryptography_service = cryptography_service
 
@@ -125,7 +126,7 @@ class Transaction(AbstractHashableModel):
     def canonicalize_with_signature_and_hash(self) -> str:
         if not self.hash:
             raise ValueError("Transaction hash is not set.")
-        if not self.sender_signature:
+        if not self.sender_signature and self.kind == TransactionType.TRANSFER:
             raise ValueError("Sender signature is not set.")
         return f"{self.canonicalize()}|{self.sender_signature}|{self.hash}"
 
@@ -142,9 +143,21 @@ class Transaction(AbstractHashableModel):
                 raise ValueError(f"Unknown transaction type: {self.kind}")
 
     def _validate_transfer(self, raise_exception: bool = True) -> bool:
-
-        # TODO Validate spender has sufficient funds
         # TODO Mark transaction as invalid when necessary
+
+        sender_wallet = Wallet.from_address(self.sender_address) if self.sender_address else None
+
+        if not sender_wallet:
+            if raise_exception:
+                raise InvalidTransactionException("Sender's wallet could not be found.")
+            return False
+
+        required_balance = self.amount + self.fee
+
+        if sender_wallet.balance < required_balance:
+            if raise_exception:
+                raise InsufficientBalanceException("Sender has insufficient balance for this transaction.")
+            return False
 
         senders_public_key = self.sender_public_key
         if not senders_public_key:
@@ -176,4 +189,27 @@ class Transaction(AbstractHashableModel):
         raise NotImplementedError("Mining reward validation not implemented yet.")
 
     def _validate_signup_reward(self) -> bool:
-        raise NotImplementedError("Signup reward validation not implemented yet.")
+        """
+        Validate signup reward transaction.
+        It is valid when:
+            - The transaction has **no sender address** (it is system-generated).
+            - The receiver address matches the **newly registered user's public address**.
+            - The amount equals the **fixed signup reward** (50 coins, as defined in the assignment).
+            - The transaction fee is **zero**.
+        """
+
+        expected_amount = Decimal.from_float(50.0)
+        expected_fee = Decimal.from_float(0.0)
+
+        if self.sender_address is not None:
+            raise InvalidTransactionException("Signup reward transaction must not have a sender address.")
+
+        if self.amount != expected_amount:
+            raise InvalidTransactionException(f"Signup reward transaction amount must be {expected_amount}.")
+
+        if self.fee != expected_fee:
+            raise InvalidTransactionException("Signup reward transaction fee must be zero.")
+
+        # TODO: Check hash integrity
+
+        return True

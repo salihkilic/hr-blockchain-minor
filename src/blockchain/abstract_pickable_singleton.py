@@ -1,5 +1,6 @@
 import os
 import pickle
+import warnings
 from abc import ABC
 from typing import Optional, cast, Any
 
@@ -14,16 +15,11 @@ class AbstractPickableSingleton(ABC):
     def __init__(self, file_path: Optional[str] = None):
         """ Initializes the singleton instance. """
         super().__init__()
-        self._file_path = file_path if file_path is not None else os.path.join(
-            self._fs_service.get_data_root(), f"{self.__class__.__name__.lower()}.dat")
         self.__class__._instance = self
 
-    @property
-    def file_path(self) -> str:
-        return self._file_path
-
     @classmethod
-    def create_instance(cls, file_path: Optional[str] = None) -> None:
+    @warnings.deprecated("create_instance is deprecated. Use get_instance() instead.")
+    def create_instance(cls) -> None:
         """
         Deprecated: Old behavior to create the singleton instance.
         Use get_instance() instead to get or create the instance.
@@ -31,10 +27,10 @@ class AbstractPickableSingleton(ABC):
         if cls._instance is not None:
             raise Exception("Instance already created. Use get_instance() to access it.")
         # Delegate to get_instance which will attempt to load from disk or create.
-        cls.get_instance(file_path=file_path)
+        cls.get_instance()
 
     @classmethod
-    def get_instance(cls, file_path: Optional[str] = None):
+    def get_instance(cls):
         """Return the singleton instance for this class.
 
         It takes the following paths:
@@ -45,40 +41,33 @@ class AbstractPickableSingleton(ABC):
         if cls._instance is not None:
             return cls._instance
 
-        # No instance yet: determine file path to load from.
-        chosen_path = file_path
-        if chosen_path is None:
-            # From class name
-            data_root = cls._fs_service.get_data_root()
-            chosen_path = os.path.join(data_root, f"{cls.__name__.lower()}.pkl")
-
         # Try to load from disk if possible
-        from_file = cls.load(chosen_path)
+        from_file = cls.load()
         if from_file is not None:
             cls._instance = from_file
             return cls._instance
 
         # No saved instance found: create a new one and set cls._instance
-        return cls(chosen_path)
+        return cls()
 
     @classmethod
     def _save(cls) -> None:
         """Save the entire object to disk."""
         instance = cls.get_instance()
         # Ensure target directory exists
-        os.makedirs(os.path.dirname(instance.file_path), exist_ok=True)
-        with open(instance.file_path, "wb") as f:
+        file_path = cls._fs_service.get_data_file_path(f"{cls.__name__.lower()}.pkl")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "wb") as f:
             pickle.dump(instance, cast(Any, f))
 
     @classmethod
-    def load(cls, file_path: Optional[str]) -> Optional["AbstractPickableSingleton"]:
+    def load(cls) -> Optional["AbstractPickableSingleton"]:
         """Load the object from disk.
 
         Returns None if file_path is falsy, the file does not exist, or the file
         cannot be unpickled.
         """
-        if not file_path:
-            return None
+        file_path = cls._fs_service.get_data_file_path(f"{cls.__name__.lower()}.pkl")
         if not os.path.exists(file_path):
             return None
         try:

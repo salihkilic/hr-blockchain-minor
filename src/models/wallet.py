@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
-from blockchain.ledger import Ledger
+from repositories.user import UserRepository
 from .user import User
 
 
@@ -29,11 +29,20 @@ class Wallet:
     def from_user(cls, user: User) -> "Wallet":
         return cls(address=user.address, owner_username=user.username, public_key=user.public_key)
 
+    @classmethod
+    def from_address(cls, address: str) -> "Wallet":
+        user_repository = UserRepository()
+        user = user_repository.find_by_address(address)
+        if user is None:
+            raise ValueError(f"No user found with address: {address}")
+        return cls(address=user.address, owner_username=user.username, public_key=user.public_key)
+
     @property
     def balance(self) -> Decimal:
         """
         Get the balance of this wallet.
         """
+        from blockchain import Ledger, Pool
         ledger = Ledger.get_instance()
         balance = Decimal("0.0")
 
@@ -44,6 +53,12 @@ class Wallet:
                     balance += transaction.amount
                 if transaction.sender_address == self.address:
                     balance -= (transaction.amount + transaction.fee)
+
+        # Also consider pending transactions in the pool, ignore incoming because they are not confirmed yet
+        pool = Pool.get_instance()
+        for transaction in pool.get_transactions():
+            if transaction.sender_address == self.address:
+                balance -= (transaction.amount + transaction.fee)
 
         return balance
 
