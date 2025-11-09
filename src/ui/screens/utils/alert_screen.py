@@ -41,9 +41,20 @@ class AlertScreen(Screen):
             vertical.styles.border = ("double", "green")
         if self.alert.alert_type == AlertType.WARNING:
             vertical.styles.border = ("double", "goldenrod")
+        if self.alert.alert_type == AlertType.INFO:
+            vertical.styles.border = ("double", "blue")
+        if self.alert.alert_type == AlertType.DANGER:
+            vertical.styles.border = ("double", "red")
+
+        yield Button("Close", id="close")
 
         yield vertical
         yield Footer()
 
     async def on_mount(self) -> None:
-        self.set_timer(3, lambda: self.app.call_later(self.app.pop_screen))
+        if self.alert.dismissed_automatically:
+            self.set_timer(3, lambda: self.app.call_later(self.app.pop_screen))
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close":
+            self.app.pop_screen()

@@ -113,6 +113,7 @@ class Transaction(AbstractHashableModel):
             cls,
             receiver_address: str
     ):
+        # TODO Make receiver has never received signup reward before
         return Transaction(
             receiver_address=receiver_address,
             amount=Decimal.from_float(50.0),

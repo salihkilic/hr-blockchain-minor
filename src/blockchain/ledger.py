@@ -65,9 +65,9 @@ class Ledger(AbstractPickableSingleton):
     def add_block(self, block: Block) -> None:
         self._blocks[block.calculated_hash] = block
         self._latest_block = block
+        self._save()
         from blockchain import Pool
         Pool.get_instance().remove_transactions(block.transactions)
-        self._save()
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

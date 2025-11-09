@@ -1,3 +1,4 @@
+from textual import events, log
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
@@ -46,3 +47,6 @@ class BlockchainExplorerScreen(Screen):
             classes="container"
         )
         yield Footer()
+
+    def _on_screen_resume(self) -> None:
+        self.refresh()

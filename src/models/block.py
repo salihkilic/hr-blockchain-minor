@@ -133,7 +133,7 @@ class Block:
         from services import CryptographyService
         crypto_service = CryptographyService()
 
-        block.hash = crypto_service.sha256_hash(block.canonicalize())
+        block.calculated_hash = crypto_service.sha256_hash(block.canonicalize())
 
         return block
 
@@ -152,7 +152,7 @@ class Block:
         from services import CryptographyService
         crypto_service = CryptographyService()
 
-        block.hash = crypto_service.sha256_hash(block.canonicalize())
+        block.calculated_hash = crypto_service.sha256_hash(block.canonicalize())
 
         return block
 
