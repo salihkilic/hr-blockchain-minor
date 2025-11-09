@@ -18,7 +18,6 @@ class AbstractPickableSingleton(ABC):
         self.__class__._instance = self
 
     @classmethod
-    @warnings.deprecated("create_instance is deprecated. Use get_instance() instead.")
     def create_instance(cls) -> None:
         """
         Deprecated: Old behavior to create the singleton instance.
