@@ -54,7 +54,16 @@ class Wallet:
                 if transaction.sender_address == self.address:
                     balance -= (transaction.amount + transaction.fee)
 
-        # Also consider pending transactions in the pool, ignore incoming because they are not confirmed yet
+        return balance
+
+    @property
+    def reserved_balance(self) -> Decimal:
+        """
+        Get the reserved balance of this wallet (amount locked in pending transactions).
+        """
+        balance = Decimal("0.0")
+
+        from blockchain import Pool
         pool = Pool.get_instance()
         for transaction in pool.get_transactions():
             if transaction.sender_address == self.address:

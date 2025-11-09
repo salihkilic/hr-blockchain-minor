@@ -1,18 +1,25 @@
 import os
 from typing import Optional
 
+from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from exceptions.mining import InvalidBlockException
 from models import Transaction, Block
 from models.constants import FilesAndDirectories
 
 
-class Pool(AbstractPickableSingleton):
+class Pool(AbstractPickableSingleton, Subscribable):
     _transactions: list[Transaction]
 
     def __init__(self):
         self._transactions = []
         super().__init__()
+
+    @classmethod
+    def _save(cls) -> None:
+        # Notify subscribers about the updated transactions change before saving
+        cls._call_subscribers(None)
+        super()._save()
 
     def add_transaction(self, transaction: Transaction) -> None:
         transaction.validate()

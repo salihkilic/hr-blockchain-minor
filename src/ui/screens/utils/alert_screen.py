@@ -46,7 +46,8 @@ class AlertScreen(Screen):
         if self.alert.alert_type == AlertType.DANGER:
             vertical.styles.border = ("double", "red")
 
-        yield Button("Close", id="close")
+        if not self.alert.dismissed_automatically:
+            yield Button("Close", id="close")
 
         yield vertical
         yield Footer()

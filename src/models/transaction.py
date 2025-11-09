@@ -67,6 +67,29 @@ class Transaction(AbstractHashableModel):
         return self._hash
 
     @classmethod
+    def create_by_receiver_username(
+            cls,
+            sender: User,
+            receiver_username: str,
+            amount: Decimal,
+            fee: Decimal,
+    ):
+        from repositories.user import UserRepository
+
+        user_repo = UserRepository()
+        receiver = user_repo.find_by_username(receiver_username)
+
+        if not receiver:
+            raise InvalidTransactionException(f"Receiver with username '{receiver_username}' not found.")
+
+        return cls.create(
+            sender=sender,
+            receiver_address=receiver.address,
+            amount=amount,
+            fee=fee,
+        )
+
+    @classmethod
     def create(
             cls,
             sender: User,
@@ -154,8 +177,10 @@ class Transaction(AbstractHashableModel):
             return False
 
         required_balance = self.amount + self.fee
+        # Reserved balance is a negative number, so we add it to get the total available balance
+        sender_balance = sender_wallet.balance + sender_wallet.reserved_balance
 
-        if sender_wallet.balance < required_balance:
+        if sender_balance < required_balance:
             if raise_exception:
                 raise InsufficientBalanceException("Sender has insufficient balance for this transaction.")
             return False

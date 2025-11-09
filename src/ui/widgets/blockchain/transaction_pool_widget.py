@@ -1,9 +1,12 @@
+from textual import events, log
 from textual.app import RenderResult, ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll, Container
+from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
 from blockchain import Pool
+from models import Transaction
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -20,13 +23,21 @@ class TransactionPoolWidget(Widget):
             }
         """
 
+    transactions: list[Transaction] = reactive([], recompose=True)
+
     def __init__(self, ):
         super().__init__()
+        self.transactions = Pool.get_instance().get_transactions()
+
+    def on_mount(self) -> None:
+        Pool.subscribe(self.update_transactions)
+
+    def update_transactions(self, param):
+        log("Updating transactions in pool widget")
+        self.transactions = Pool.get_instance().get_transactions()
 
     def compose(self) -> ComposeResult:
-
-        txs = Pool.get_instance().get_transactions()
-        txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
+        txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), self.transactions))
 
         yield Vertical(
             VerticalScroll(
@@ -34,18 +45,3 @@ class TransactionPoolWidget(Widget):
                 classes="transactions_scroll"
             ),
         )
-
-        #
-        # yield Vertical(
-        #     Label(f"State mined"),
-        #     Rule(line_style="heavy"),
-        #     Label(f"Block #{visible_block}"),
-        #     Rule(line_style="heavy"),
-        #     Horizontal(
-        #         Button("Previous Block", id="prev_block"),
-        #         Button("Next Block", id="next_block", disabled=True),
-        #         classes="button-row"
-        #     ),
-        #     *txs_widgets,
-        #     Rule(line_style="heavy"),
-        # )
