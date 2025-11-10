@@ -1,7 +1,10 @@
 import unittest
+from unittest.mock import patch
+
 import pytest
 
-from repositories.user.mock_user_repository import MockUserRepository
+from exceptions.user.invalid_credentials_exception import InvalidCredentialsException
+from models import User
 from services.user_service import UserService
 
 
@@ -9,7 +12,7 @@ class UserServiceTests(unittest.TestCase):
 
     def setUp(self):
         """ Set up the test environment before each test case. """
-        self.user_service = UserService(MockUserRepository())
+        self.user_service = UserService()
 
     # @pytest.mark.unit
     # def test_create_user_with_valid_credentials(self):
@@ -157,11 +160,11 @@ class UserServiceTests(unittest.TestCase):
         username = "nonexistentuser"
         password = "somepass123"
 
-        # ACT
-        user = self.user_service.login(username, password)
+        with pytest.raises(InvalidCredentialsException) as exc_info:
+            user = self.user_service.login(username, password)
 
-        # ASSERT
-        assert user is None, "Should return None for non-existent username"
+        assert exc_info.value.field == 'username'
+
 
     @pytest.mark.unit
     def test_login_with_empty_username(self):
@@ -170,24 +173,23 @@ class UserServiceTests(unittest.TestCase):
         username = ""
         password = "validpass123"
 
-        # ACT
-        user = self.user_service.login(username, password)
+        with pytest.raises(InvalidCredentialsException) as exc_info:
+            user = self.user_service.login(username, password)
 
-        # ASSERT
-        assert user is None, "Should return None for empty username"
+        assert exc_info.value.field == 'username'
 
     @pytest.mark.unit
-    def test_login_with_empty_password(self):
+    @patch('repositories.user.user_repository.UserRepository.find_by_username', return_value=User.create("validuser", "validpass123"))
+    def test_login_with_empty_password(self, mock_find):
         """Empty password should return None."""
         # ARRANGE
         username = "validuser"
         password = ""
 
-        # ACT
-        user = self.user_service.login(username, password)
+        with pytest.raises(InvalidCredentialsException) as exc_info:
+            user = self.user_service.login(username, password)
 
-        # ASSERT
-        assert user is None, "Should return None for empty password"
+        assert exc_info.value.field == 'password'
 
     # @pytest.mark.unit
     # def test_get_user_existing(self):
