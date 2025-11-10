@@ -1,6 +1,6 @@
 from base.subscribable import Subscribable
 from exceptions.user.invalid_credentials_exception import InvalidCredentialsException
-from models import User
+from models import User, Transaction
 from repositories.user.user_repository import UserRepository
 
 class UserService(Subscribable):
@@ -26,7 +26,10 @@ class UserService(Subscribable):
         self.__class__.logged_in_user = None
         self.__class__._call_subscribers(None)
 
-    def register(self, username:str, password:str) -> User:
+    def register(self, username:str, password:str) -> None:
         user = User.create(username, password)
         self.repo.persist(user)
-        return user
+
+        signup_reward = Transaction.create_signup_reward(user.address)
+        from blockchain import Pool
+        Pool.get_instance().add_transaction(signup_reward)

@@ -7,6 +7,7 @@ from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Col
 
 from models import Transaction
 from models.enum import TransactionType
+from services.user_service import UserService
 from ui.screens.blockchain.transaction_detail_screen import TransactionDetailScreen
 
 
@@ -32,11 +33,28 @@ class TransactionListingWidget(Widget):
         }
     """
 
-    def __init__(self, transaction: Transaction):
+    def __init__(self, transaction: Transaction, show_move_buttons: bool = True):
         self.transaction = transaction
+        self.show_move_buttons = show_move_buttons
         super().__init__()
 
     def compose(self) -> ComposeResult:
+        classes = ""
+
+        if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD:
+            classes = "transaction--reward"
+
+        move_buttons = []
+
+        if self.show_move_buttons:
+            move_buttons = [
+                Horizontal(
+                    Button("Move to pool", classes="button"),
+                    Button("Move to block", classes="button"),
+                    classes="button_col"
+                ),
+            ]
+
         yield Collapsible(
             Label(f"Type: {self.transaction.kind.value.upper()}"),
             Label(f"Sender: {self.transaction.sender_address}"),
@@ -44,11 +62,7 @@ class TransactionListingWidget(Widget):
             Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
             Label(f"Fee: {self.transaction.fee.quantize(Decimal('0.01'))} GCN"),
             Vertical(
-                Horizontal(
-                    Button("Move to pool", classes="button"),
-                    Button("Move to block", classes="button"),
-                    classes="button_col"
-                ),
+                *move_buttons,
                 Horizontal(
                     Button("Show details", classes="button", id="show_tx_details"),
                     classes="button_col"
@@ -57,7 +71,7 @@ class TransactionListingWidget(Widget):
             ),
             title=f"TX {self.transaction.hash}",
             collapsed=True,
-            classes=("transaction--reward" if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD else "")
+            classes=(classes)
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

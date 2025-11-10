@@ -6,6 +6,7 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
 from blockchain import Ledger
+from models.block import BlockStatus
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -30,12 +31,22 @@ class BlockInfoWidget(Widget):
             }
             .block__status {
                 padding: 1 1;
+                margin: 1 0 0 0;
                 width: 100%;
                 text-align: center;
                 text-style: bold;
             }
+            .block__status--accepted {
+                background: lightgreen 40%;
+            }
+            .block__status--rejected {
+                background: lightcoral 40%;
+            }
+            .block__status--pending {
+                background: lightyellow 40%;
+            }
             .block__title--genesis {
-                background: lightgreen 20%;
+                background: ansi_blue 20%;
             }
         """
 
@@ -62,10 +73,26 @@ class BlockInfoWidget(Widget):
         txs = visible_block.transactions
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
-        yield Vertical(
-            Label(f"Block nr: {visible_block.number}", classes="block__title") if visible_block.number > 0 else Label(f"Genesis Block", classes="block__title block__title--genesis"),
-            # TODO Implement status
-            # Label(f"Block status: TODO", classes="block__status"),
+        children = []
+
+        children.append(
+            Label(f"Block nr: {visible_block.number}", classes="block__title") if visible_block.number > 0 else Label(
+                f"Genesis Block", classes="block__title block__title--genesis"),
+        )
+
+        if visible_block.number > 0:
+            classes = "block__status"
+            if visible_block.status == BlockStatus.ACCEPTED:
+                classes += " block__status--accepted"
+            if visible_block.status == BlockStatus.REJECTED:
+                classes += " block__status--rejected"
+            if visible_block.status == BlockStatus.PENDING:
+                classes += " block__status--pending"
+            children.append(
+                Label(f"Block status: {visible_block.status.value.capitalize()}", classes=classes)
+            )
+
+        children.append(
             Vertical(
                 Horizontal(
                     Button("Previous", id="prev_block", classes="button", disabled=is_first_block),
@@ -77,11 +104,18 @@ class BlockInfoWidget(Widget):
                     classes="button_col"
                 ),
                 classes="button_row"
-            ),
+            )
+        )
+
+        children.append(
             VerticalScroll(
                 *txs_widgets,
                 classes="transactions_scroll"
-            ),
+            )
+        )
+
+        yield Vertical(
+            *children
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

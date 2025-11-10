@@ -3,6 +3,7 @@ import os
 from blockchain import Ledger, Pool
 from exceptions.user import DuplicateUsernameException
 from models import User, Transaction, Block
+from models.block import BlockStatus
 from repositories.user import UserRepository
 from services import InitializationService, FileSystemService
 
@@ -40,6 +41,7 @@ def UserFixtures():
     print(f"Created {len(created_users)} users with signup rewards.")
 
     block = Block.mine_with_transactions(created_users[0], signup_rewards)
+    block.status = BlockStatus.ACCEPTED
 
     Ledger.get_instance().add_block(block)
 

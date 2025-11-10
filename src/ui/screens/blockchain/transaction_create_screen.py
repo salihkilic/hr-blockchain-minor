@@ -29,9 +29,16 @@ class TransactionCreateScreen(Screen):
         Label {
             margin: 0 2;
         }
-        .error{
+        .tx_error{
             color: red;
-            margin: 2 4;
+            margin: 2 2;
+        }
+        .balance {
+            margin: 1 2;
+            text-style: bold;
+        }
+        .balance--warning {
+            color: orange;
         }
     """
 
@@ -40,16 +47,32 @@ class TransactionCreateScreen(Screen):
     amount = reactive(Decimal("0.0"))
     fee = reactive(Decimal("0.0"))
 
+    spendable_balance: Decimal = reactive(Decimal("0.0"), recompose=True)
+
     def __init__(self):
         super().__init__()
 
+    def on_mount(self):
+        UserService.subscribe(self.update_spendable_balance)
+
+    def update_spendable_balance(self, user):
+        if user is not None:
+            from models import Wallet
+            wallet = Wallet.from_user(user)
+            self.spendable_balance = wallet.spendable_balance
+        else:
+            self.spendable_balance = Decimal("0.0")
+
     def compose(self) -> ComposeResult:
 
-        error_labels = [Label(f"{error}", classes="login_error") for error in self.tx_errors]
+        spendable_balance = self.spendable_balance.quantize(Decimal("0.00"))
+
+        error_labels = [Label(f"{error}", classes="tx_error") for error in self.tx_errors]
 
         yield Vertical(
             *error_labels,
             Label("Create a new transaction"),
+            Label(f"Spendable balance: {spendable_balance}", classes="balance " + ("balance--warning" if spendable_balance <= 0 else "")),
             Input(placeholder="To", id="to"),
             Input(placeholder="Amount", id="amount"),
             Input(placeholder="Fee", id="fee"),

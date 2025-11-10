@@ -10,7 +10,24 @@ from services.user_service import UserService
 
 
 class UserLoginScreen(Screen):
-    CSS_PATH = "UserForm.tcss"
+    DEFAULT_CSS = """
+        .title {
+          margin: 2 4;
+        }
+        
+        Input {
+          margin: 2 4;
+        }
+        
+        Button {
+          margin: 0 2 0 4;
+        }
+        
+        .login_error{
+            color: red;
+            margin: 2 4;
+        }
+    """
 
     username: str = reactive("")
     password: str = reactive("")
@@ -67,9 +84,9 @@ class UserLoginScreen(Screen):
         if event.button.id == "login":
             self._try_logging_in()
         if event.button.id == "register":
-            self.app.push_screen("register_screen")
+            self.app.switch_screen("register_screen")
         if event.button.id == "cancel":
-            self.app.switch_mode("blockchain_explorer")
+            self.app.pop_screen()
         if event.button.id == "continue":
             self.app.pop_screen()
 

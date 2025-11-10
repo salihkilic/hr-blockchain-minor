@@ -79,7 +79,7 @@ class Block:
         self.difficulty = difficulty
         self.transactions = transactions
         self.validators = []
-        self.status = None
+        self.status = BlockStatus.PENDING
         self.mined_duration = None
 
         # Compute merkle root from transaction hashes
@@ -147,7 +147,7 @@ class Block:
             transactions=[]
         )
         block.calculated_hash = block.compute_hash()
-        block.status = BlockStatus.ACCEPTED
+        block.status = BlockStatus.GENESIS
         return block
 
     # -----------------

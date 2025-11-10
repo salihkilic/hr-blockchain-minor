@@ -182,7 +182,7 @@ class Transaction(AbstractHashableModel):
 
         if sender_balance < required_balance:
             if raise_exception:
-                raise InsufficientBalanceException("Sender has insufficient balance for this transaction.")
+                raise InsufficientBalanceException("Insufficient balance for this transaction.")
             return False
 
         senders_public_key = self.sender_public_key

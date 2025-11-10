@@ -7,6 +7,7 @@ from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Col
 
 from blockchain import Pool
 from models import Transaction
+from services.user_service import UserService
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -21,28 +22,48 @@ class TransactionPoolWidget(Widget):
             .button {
                 width: 50%;
             }
+            .button--add {
+                width: 100%;
+                margin: 0 0 1 0;
+            }
         """
 
     transactions: list[Transaction] = reactive([], recompose=True)
+    show_add_required: bool = reactive(False, recompose=True)
 
-    def __init__(self, ):
+    def __init__(self):
         super().__init__()
         self.transactions = Pool.get_instance().get_transactions()
 
     def on_mount(self) -> None:
         Pool.subscribe(self.update_transactions)
+        UserService.subscribe(self.update_show_add_required)
+
 
     def update_transactions(self, param):
-        log(f"TransactionPoolWidget received pool update, current transaction count is {len(Pool.get_instance().get_transactions())}")
         self.transactions = Pool.get_instance().get_transactions()
-        log(f"TransactionPoolWidget updated transactions, new count is {len(self.transactions)}")
+
+    def update_show_add_required(self, user):
+        self.show_add_required = user is not None
+
 
 
     def compose(self) -> ComposeResult:
 
-        yield Vertical(
+        children = []
+
+        if self.show_add_required:
+            children.append(
+                Button("Add required transactions to block", classes="button button--add", id="add_required_txs")
+            )
+
+        children.append(
             VerticalScroll(
                 *list(map(lambda tx: TransactionListingWidget(tx), self.transactions)),
                 classes="transactions_scroll"
-            ),
+            )
+        )
+
+        yield Vertical(
+            *children
         )

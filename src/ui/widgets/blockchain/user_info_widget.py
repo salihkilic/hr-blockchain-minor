@@ -48,6 +48,7 @@ class UserInfoWidget(Widget):
     logged_in_user: User | None = reactive(None, recompose=True)
     balance: Decimal = reactive(Decimal("0.00"), recompose=True)
     reserved_balance: Decimal = reactive(Decimal("0.00"), recompose=True)
+    unconfirmed_balance: Decimal = reactive(Decimal("0.00"), recompose=True)
 
     def __init__(self, ):
         super().__init__()
@@ -68,11 +69,12 @@ class UserInfoWidget(Widget):
         if self.logged_in_user is None:
             self.balance = Decimal("0.00")
             self.reserved_balance = Decimal("0.00")
+            self.unconfirmed_balance = Decimal("0.00")
             return
         wallet = Wallet.from_user(self.logged_in_user)
         self.balance = wallet.balance
         self.reserved_balance = wallet.reserved_balance
-
+        self.unconfirmed_balance = wallet.unconfirmed_balance
 
     def compose(self) -> ComposeResult:
         log("Composing UserInfoWidget with logged_in_user: {}".format(self.logged_in_user))
@@ -82,7 +84,7 @@ class UserInfoWidget(Widget):
                 Label(f"Log in or register to use this module", classes=("block__title block__title--inverted")),
                 Vertical(
                     Horizontal(
-                        Button("Login", id="login", classes="button"),
+                        Button("Login or register", id="login", classes="button"),
                         classes="col"
                     ),
                     classes="row"
@@ -96,18 +98,20 @@ class UserInfoWidget(Widget):
         balance = self.balance.quantize(Decimal("0.00"))
         reserved_balance = self.reserved_balance.quantize(Decimal("0.00")).__abs__()
         spendable_balance = (self.balance + self.reserved_balance).quantize(Decimal("0.00"))
+        unconfirmed_balance = self.unconfirmed_balance.quantize(Decimal("0.00"))
+
 
         yield Vertical(
             Label(f"User: {self.logged_in_user.username}", classes="block__title"),
-            Label(f"{self.logged_in_user.address}", classes="block__title"),
             Vertical(
                 Horizontal(
                     Label(f"Balance: {balance}", classes="col__label"),
-                    Label(f"Reserved: {reserved_balance}", classes="col__label " + ("col__label--warning" if reserved_balance > 0 else "")),
+                    Label(f"Spendable: {spendable_balance}", classes="col__label"),
                     classes="col"
                 ),
                 Horizontal(
-                    Label(f"Spendable balance: {spendable_balance}", classes="col__label"),
+                    Label(f"Reserved: {reserved_balance}", classes="col__label"),
+                    Label(f"Unconfirmed: {unconfirmed_balance}", classes="col__label"),
                     classes="col"
                 ),
                 classes="row"
