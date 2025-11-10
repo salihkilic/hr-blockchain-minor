@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import warnings
-
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from dataclasses import dataclass, field
@@ -105,7 +103,6 @@ class User:
         )
 
     @classmethod
-    @warnings.deprecated("create_for_test is deprecated. Use mocking instead.")
     def create_for_test(
             cls,
             username: str,
