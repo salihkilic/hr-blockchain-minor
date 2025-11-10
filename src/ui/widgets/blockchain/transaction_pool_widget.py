@@ -33,15 +33,16 @@ class TransactionPoolWidget(Widget):
         Pool.subscribe(self.update_transactions)
 
     def update_transactions(self, param):
-        log("Updating transactions in pool widget")
+        log(f"TransactionPoolWidget received pool update, current transaction count is {len(Pool.get_instance().get_transactions())}")
         self.transactions = Pool.get_instance().get_transactions()
+        log(f"TransactionPoolWidget updated transactions, new count is {len(self.transactions)}")
+
 
     def compose(self) -> ComposeResult:
-        txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), self.transactions))
 
         yield Vertical(
             VerticalScroll(
-                *txs_widgets,
+                *list(map(lambda tx: TransactionListingWidget(tx), self.transactions)),
                 classes="transactions_scroll"
             ),
         )

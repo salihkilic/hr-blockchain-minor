@@ -18,8 +18,8 @@ class Pool(AbstractPickableSingleton, Subscribable):
     @classmethod
     def _save(cls) -> None:
         # Notify subscribers about the updated transactions change before saving
-        cls._call_subscribers(None)
         super()._save()
+        cls._call_subscribers(None)
 
     def add_transaction(self, transaction: Transaction) -> None:
         transaction.validate()
