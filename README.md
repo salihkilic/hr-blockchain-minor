@@ -9,9 +9,17 @@ Then run the Development Console with:
 
 `textual console`
 
+Install all requirements for the app with:
+`pip install -r requirements.txt`
+
+Go to the venv folder and activate the virtual environment with:
+`.venv/Scripts/activate.bat`  (Windows)
+or
+`source .venv/bin/activate`  (MacOS / Linux)
+
 And your app in another terminal window with:
 
-`textual run --dev src/main.py`
+`textual run --dev src/goodchain.py`
 
 
 Some nice links:
