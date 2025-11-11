@@ -1,10 +1,11 @@
 from textual import events, log
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
-from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget, UserInfoWidget
+from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget, UserInfoWidget, NewBlockInfoWidget
 
 
 class BlockchainExplorerScreen(Screen):
@@ -17,6 +18,18 @@ class BlockchainExplorerScreen(Screen):
 
     """
 
+    block_pending_mining: bool = reactive(False, recompose=True)
+
+    def on_mount(self):
+        from blockchain import Pool
+        Pool.subscribe(self.update_block_pending_mining_status)
+
+    def update_block_pending_mining_status(self, param):
+        from blockchain import Pool
+        transactions_marked = Pool.get_instance().get_transactions_marked_for_block()
+        log(f"Updating block_pending_mining status: {len(transactions_marked)}")
+        self.block_pending_mining = len(transactions_marked) > 0
+
     def compose(self) -> ComposeResult:
         column_user_info = Vertical(
             UserInfoWidget(),
@@ -25,12 +38,20 @@ class BlockchainExplorerScreen(Screen):
         column_user_info.border_title = "User Information"
         column_user_info.styles.border = ("double", "blueviolet")
 
-        column_block_info = Vertical(
-            BlockInfoWidget(),
-            classes="column"
-        )
-        column_block_info.border_title = "Block information"
-        column_block_info.styles.border = ("double", "lightskyblue")
+        if not self.block_pending_mining:
+            column_block_info = Vertical(
+                BlockInfoWidget(),
+                classes="column"
+            )
+            column_block_info.border_title = "Block information"
+            column_block_info.styles.border = ("double", "lightskyblue")
+        else:
+            column_block_info = Vertical(
+                NewBlockInfoWidget(),
+                classes="column"
+            )
+            column_block_info.border_title = "New block"
+            column_block_info.styles.border = ("double", "greenyellow")
 
 
         column_transaction_pool = Vertical(

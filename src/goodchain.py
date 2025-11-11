@@ -1,7 +1,6 @@
 from textual.app import App
 
-from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen, TransactionCreateScreen, \
-    BlockMineScreen, BlockMiningScreen
+from ui.screens.blockchain import BlockchainExplorerScreen, TransactionDetailScreen, TransactionCreateScreen, BlockMiningScreen
 from ui.screens.user import UserLoginScreen, UserRegisterScreen
 
 class BlockchainApp(App):
@@ -14,7 +13,6 @@ class BlockchainApp(App):
         "register_screen": UserRegisterScreen,
         "transaction_detail_screen": TransactionDetailScreen,
         "transaction_create_screen": TransactionCreateScreen,
-        "block_mine_screen": BlockMineScreen,
         "block_mining_screen": BlockMiningScreen
     }
 

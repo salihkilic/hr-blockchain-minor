@@ -1,5 +1,4 @@
 from .blockchain_explorer_screen import BlockchainExplorerScreen
 from .transaction_detail_screen import TransactionDetailScreen
 from .transaction_create_screen import TransactionCreateScreen
-from .block_mine_screen import BlockMineScreen
 from .block_mining_screen import BlockMiningScreen

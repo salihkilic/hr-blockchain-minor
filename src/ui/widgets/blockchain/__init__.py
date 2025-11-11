@@ -2,3 +2,4 @@ from .block_info_widget import BlockInfoWidget
 from .transaction_pool_widget import TransactionPoolWidget
 from .transaction_listing_widget import TransactionListingWidget
 from .user_info_widget import UserInfoWidget
+from .new_block_info_widget import NewBlockInfoWidget

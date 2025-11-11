@@ -28,12 +28,11 @@ class TransactionPoolWidget(Widget):
             }
         """
 
-    transactions: list[Transaction] = reactive([], recompose=True)
+    transactions: list[Transaction] = reactive(lambda: Pool.get_instance().get_transaction_without_marked_for_block(), recompose=True)
     show_add_required: bool = reactive(False, recompose=True)
 
     def __init__(self):
         super().__init__()
-        self.transactions = Pool.get_instance().get_transactions()
 
     def on_mount(self) -> None:
         Pool.subscribe(self.update_transactions)
@@ -41,9 +40,12 @@ class TransactionPoolWidget(Widget):
 
 
     def update_transactions(self, param):
-        self.transactions = Pool.get_instance().get_transactions()
+        log("Transaction pool updated, refreshing transactions...")
+        self.transactions = Pool.get_instance().get_transaction_without_marked_for_block()
+        self.mutate_reactive(TransactionPoolWidget.transactions)
 
     def update_show_add_required(self, user):
+        log("User state changed, updating show_add_required...")
         self.show_add_required = user is not None
 
 
