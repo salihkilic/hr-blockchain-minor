@@ -50,10 +50,15 @@ class TestMiningWorkflow(unittest.TestCase):
             transaction5,
             transaction6
         ]
-        block = Block.mine_with_transactions(
-            miner=user1,
-            transactions=correct_transactions
-        )
+        # Keep difficulty low to mine quickly in tests
+        from services.difficulty_service import DifficultyService
+        with patch.object(DifficultyService, "current_difficulty", 1), \
+             patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
+            upd_mock.return_value = None
+            block = Block.mine_with_transactions(
+                miner=user1,
+                transactions=correct_transactions
+            )
 
         too_few_transactions = [
             transaction1,
@@ -149,29 +154,35 @@ class TestMiningWorkflow(unittest.TestCase):
         assert required_transactions_after_block_mined[2] == transactions[6]  # Lowest fee transaction
         assert required_transactions_after_block_mined[3] == transactions[10] # Second lowest fee transaction
 
-        fair_block = Block.mine_with_transactions(
-            miner=user1,
-            transactions=[
-                transactions[0],
-                transactions[1],
-                transactions[6],
-                transactions[10],
-                extra_transactions[0]
-            ]
-        )
+        # Keep difficulty low and stable during block mining for fairness checks
+        from services.difficulty_service import DifficultyService
+        with patch.object(DifficultyService, "current_difficulty", 1), \
+             patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
+            upd_mock.return_value = None
 
-        Pool.get_instance().validate_transaction_in_block_for_fairness(fair_block)
+            fair_block = Block.mine_with_transactions(
+                miner=user1,
+                transactions=[
+                    transactions[0],
+                    transactions[1],
+                    transactions[6],
+                    transactions[10],
+                    extra_transactions[0]
+                ]
+            )
 
-        unfair_block = Block.mine_with_transactions(
-            miner=user1,
-            transactions=[
-                transactions[0],
-                transactions[2],
-                transactions[4],
-                transactions[6],
-                transactions[8]
-            ]
-        )
+            Pool.get_instance().validate_transaction_in_block_for_fairness(fair_block)
+
+            unfair_block = Block.mine_with_transactions(
+                miner=user1,
+                transactions=[
+                    transactions[0],
+                    transactions[2],
+                    transactions[4],
+                    transactions[6],
+                    transactions[8]
+                ]
+            )
 
         # Only own transactions
         with pytest.raises(InvalidBlockException) as excinf:

@@ -216,7 +216,10 @@ class Ledger(AbstractPickableSingleton):
     # Add accepted block directly (used only internally / genesis)
     # -----------------
     def add_block(self, block: Block) -> None:
-        if block.status not in (BlockStatus.ACCEPTED, BlockStatus.GENESIS, None):
+        # Accept directly added blocks by marking them as ACCEPTED if needed
+        if block.status in (None, BlockStatus.PENDING):
+            block.status = BlockStatus.ACCEPTED
+        if block.status not in (BlockStatus.ACCEPTED, BlockStatus.GENESIS):
             raise InvalidBlockException("Only accepted or genesis blocks can be added to the ledger.")
         self._blocks[block.calculated_hash] = block
         self._latest_block = block

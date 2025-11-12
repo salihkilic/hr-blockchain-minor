@@ -9,6 +9,12 @@ class UserService(Subscribable):
 
     def __init__(self):
         self.repo = UserRepository()
+        # Ensure database schema exists for tests and runtime
+        try:
+            self.repo.setup_database_structure()
+        except Exception:
+            # If initialization fails, proceed; operations will raise cleanly
+            pass
 
     def login(self, username:str, password:str) -> None:
         user = self.repo.find_by_username(username)

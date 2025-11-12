@@ -28,6 +28,17 @@ class UserRepository(AbstractUserRepository, DatabaseConnection):
         self._db_connection.cursor().executescript(meta_sql_script)
         self._db_connection.commit()
 
+        # Ensure 'address' column exists even if existing DB predates this column
+        # TODO TOM: This is a temp fix for the missing column issue
+        try:
+            cursor = self._db_connection.execute("PRAGMA table_info(users)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if 'address' not in columns:
+                self._db_connection.execute("ALTER TABLE users ADD COLUMN address TEXT")
+                self._db_connection.commit()
+        except Exception:
+            pass
+
         self._db_close()
 
 

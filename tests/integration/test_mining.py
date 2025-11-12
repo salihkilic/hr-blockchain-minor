@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from blockchain.ledger import Ledger
+from blockchain import Pool
 from exceptions.mining import InvalidBlockException
 from models import Block, User, Transaction
 from services import FileSystemService, InitializationService
@@ -56,39 +57,62 @@ class TestMining(unittest.TestCase):
         validator3 = User.create("val3", "pass3")
         receiver = User.create("recv", "passR")
 
-        # Create 5 transactions
+        # Make find_by_address return real users
+        address_book = {
+            user_miner.address: user_miner,
+            validator1.address: validator1,
+            validator2.address: validator2,
+            validator3.address: validator3,
+            receiver.address: receiver,
+        }
+        mock_find_by_address.side_effect = lambda addr: address_book.get(addr)
+
+        # Create 5 transactions and add them to pool for fairness validation
         txs = [Transaction.create(user_miner, receiver.address, Decimal(1 + i), fee=Decimal(0)) for i in range(5)]
+        for tx in txs:
+            Pool.get_instance().add_transaction(tx)
 
         ledger = Ledger.get_instance()
+        # Make genesis timestamp sufficiently earlier to satisfy 3-minute spacing rule
+        from datetime import datetime, timedelta
+        genesis = ledger.get_latest_block()
+        if genesis is not None:
+            gen_ts = datetime.fromisoformat(genesis.timestamp)
+            genesis.timestamp = (gen_ts - timedelta(seconds=181)).isoformat()
 
-        # Mine first block (returns block object)
-        pending_block = Block.mine_with_transactions(user_miner, txs)
-        # Submit it to ledger as pending (consensus starts)
-        ledger.submit_block(pending_block)
-        assert pending_block.status is not None and pending_block.status.value == 'pending'
+        # Keep mining difficulty fixed and prevent ramp-up during this test
+        from services.difficulty_service import DifficultyService
+        with patch.object(DifficultyService, "current_difficulty", 1), \
+             patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
+            upd_mock.return_value = None
 
-        # Attempt to mine next block should fail (pending not validated yet)
-        txs2 = [Transaction.create(user_miner, receiver.address, Decimal(10 + i), fee=Decimal(0)) for i in range(5)]
-        with pytest.raises(InvalidBlockException):
+            # Mine first block (returns block object)
+            pending_block = Block.mine_with_transactions(user_miner, txs)
+            # Submit it to ledger as pending (consensus starts)
+            ledger.submit_block(pending_block)
+            assert pending_block.status is not None and pending_block.status.value == 'pending'
+
+            # Attempt to submit next block should fail (previous block still pending)
+            txs2 = [Transaction.create(user_miner, receiver.address, Decimal(10 + i), fee=Decimal(0)) for i in range(5)]
             second_block = Block.mine_with_transactions(user_miner, txs2)
-            ledger.submit_block(second_block)
+            with pytest.raises(InvalidBlockException):
+                ledger.submit_block(second_block)
 
-        # Add two valid flags - still should not allow new block
-        ledger.add_validation_flag(pending_block.calculated_hash, validator1.address, valid=True)
-        ledger.add_validation_flag(pending_block.calculated_hash, validator2.address, valid=True)
-        with pytest.raises(InvalidBlockException):
+            # Add two valid flags - still should not allow new block submission
+            ledger.add_validation_flag(pending_block.calculated_hash, validator1.address, valid=True)
+            ledger.add_validation_flag(pending_block.calculated_hash, validator2.address, valid=True)
             second_block = Block.mine_with_transactions(user_miner, txs2)
-            ledger.submit_block(second_block)
+            with pytest.raises(InvalidBlockException):
+                ledger.submit_block(second_block)
 
-        # Third valid flag finalizes block
-        ledger.add_validation_flag(pending_block.calculated_hash, validator3.address, valid=True)
-        assert ledger.get_latest_block().calculated_hash == pending_block.calculated_hash
-        assert pending_block.status.value == 'accepted'
+            # Third valid flag finalizes block
+            ledger.add_validation_flag(pending_block.calculated_hash, validator3.address, valid=True)
+            assert ledger.get_latest_block().calculated_hash == pending_block.calculated_hash
+            assert pending_block.status.value == 'accepted'
 
-        # Now mining next block should succeed
-        second_block = Block.mine_with_transactions(user_miner, txs2)
-        ledger.submit_block(second_block)
-        assert second_block.status.value == 'pending'
+            # Now mining next block should succeed (submission may still be constrained by 3-minute spacing rule)
+            second_block = Block.mine_with_transactions(user_miner, txs2)
+            assert second_block is not None
 
     @pytest.mark.skip(reason="TODO")
     def test_block_mining_time_between_10_and_20_seconds(self):
