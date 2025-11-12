@@ -11,15 +11,15 @@ class DifficultyConfig:
     min_time: float = 10.0       # seconds (lower threshold)
     max_time: float = 20.0       # seconds (upper threshold)
     min_difficulty: int = 0
-    max_difficulty: int = 16
-    window_size: int = 3         # number of recent samples to average
+    max_difficulty: int = 32
+    window_size: int = 5         # number of recent samples to average
     step_limit: int = 1          # Max step change per update (usually 1)
-    default_difficulty: int = 2  # Starting difficulty
+    default_difficulty: int = 3  # Starting difficulty (tuned for ~10–20s)
 
 
 @dataclass
 class DifficultyState:
-    times: Deque[float] = field(default_factory=lambda: deque(maxlen=3))
+    times: Deque[float] = field(default_factory=lambda: deque(maxlen=5))
 
 
 class DifficultyService:

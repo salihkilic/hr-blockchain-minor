@@ -60,6 +60,58 @@ class Ledger(AbstractPickableSingleton):
     def get_all_blocks(self) -> list[Block]:
         return list(self._blocks.values())
 
+    # Helper to get the chain in order (genesis -> latest)
+    def _get_chain_ordered(self) -> list[Block]:
+        return list(reversed(self.get_n_blocks(self.block_count)))
+
+    # -----------------
+    # Chain integrity validation
+    # -----------------
+    def validate_chain(self) -> tuple[bool, list[str]]:
+        """
+        Validate the entire chain from genesis to latest.
+        Checks:
+          - Linkage and numbering
+          - Non-genesis blocks are ACCEPTED
+          - 3-minute spacing between consecutive blocks
+          - Merkle root, hash, difficulty and tx validity via Block.validate
+        Returns (is_valid, errors)
+        """
+        errors: list[str] = []
+        chain = self._get_chain_ordered()
+        if not chain:
+            errors.append("Ledger is empty.")
+            return (False, errors)
+
+        from datetime import datetime
+        previous: Optional[Block] = None
+        for idx, block in enumerate(chain):
+            # Status rules
+            if block.number == 0:
+                if block.status not in (BlockStatus.GENESIS,):
+                    errors.append(f"Genesis block has invalid status: {block.status}.")
+            else:
+                if block.status != BlockStatus.ACCEPTED:
+                    errors.append(f"Block #{block.number} is not ACCEPTED.")
+
+            # Timing rules (non-genesis)
+            if previous is not None:
+                prev_ts = datetime.fromisoformat(previous.timestamp)
+                this_ts = datetime.fromisoformat(block.timestamp)
+                delta = (this_ts - prev_ts).total_seconds()
+                if delta < 180:
+                    errors.append(f"Blocks #{previous.number} -> #{block.number} are less than 3 minutes apart.")
+
+            # Structural + transaction validation
+            validation = block.validate(previous)
+            if not validation.valid:
+                joined = "; ".join(validation.reasons)
+                errors.append(f"Block #{block.number} failed validation: {joined}")
+
+            previous = block
+
+        return (len(errors) == 0, errors)
+
     # -----------------
     # Pending blocks & consensus
     # -----------------
@@ -70,11 +122,33 @@ class Ledger(AbstractPickableSingleton):
         # Do not allow submitting a new block while another is pending validation
         if self.has_pending_blocks():
             raise InvalidBlockException("Cannot submit new block: a previous block is still pending validation.")
-        # Structural validation before accepting as pending
+
         previous = self.get_latest_block()
+
+        # Require building on an accepted (or genesis) block
+        if previous is None:
+            raise InvalidBlockException("Previous block missing.")
+        if previous.number != 0 and previous.status != BlockStatus.ACCEPTED:
+            raise InvalidBlockException("Previous block is not accepted.")
+
+        # Enforce 3-minute spacing between blocks (non-genesis)
+        if block.number != 0:
+            from datetime import datetime
+            prev_ts = datetime.fromisoformat(previous.timestamp)
+            this_ts = datetime.fromisoformat(block.timestamp)
+            delta = (this_ts - prev_ts).total_seconds()
+            if delta < 180:
+                raise InvalidBlockException("At least 3 minutes must pass between consecutive blocks.")
+
+        # Structural + transaction validation
         validation = block.validate(previous)
         if not validation.valid:
             raise InvalidBlockException(f"Block structural/transaction validation failed: {validation.reasons}")
+
+        # Fairness validation against pool
+        from blockchain import Pool
+        Pool.get_instance().validate_transaction_in_block_for_fairness(block)
+
         block.status = BlockStatus.PENDING
         self._pending_blocks[block.calculated_hash] = block
         self._save()
@@ -115,13 +189,11 @@ class Ledger(AbstractPickableSingleton):
         # Move block into chain
         self._blocks[block.calculated_hash] = block
         self._latest_block = block
-        # Create reward transaction and place in pool
-        from models import Transaction
-        reward_tx = Transaction.create_mining_reward(block.miner_address, block.transactions)
-        from blockchain import Pool
-        Pool.get_instance().add_transaction(reward_tx)
         # Remove from pending
         self._pending_blocks.pop(block.calculated_hash, None)
+        # Remove included transactions from pool
+        from blockchain import Pool
+        Pool.get_instance().remove_transactions(block.transactions)
 
     def _finalize_reject(self, block: Block) -> None:
         block.status = BlockStatus.REJECTED

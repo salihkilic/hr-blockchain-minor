@@ -90,16 +90,46 @@ class Block:
 
         self.calculated_hash = calculated_hash  # may be recomputed after full initialization
 
+    # We need to define __eq__ ourselves because it assumes all annotated attributes exist
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Block):
+            return NotImplemented
+        attrs = (
+            "number",
+            "previous_hash",
+            "timestamp",
+            "nonce",
+            "version",
+            "difficulty",
+            "miner_address",
+            "merkle_root",
+            "calculated_hash",
+            "transactions",
+            "status",
+            "validators",
+            "mined_duration",
+        )
+        for a in attrs:
+            if getattr(self, a, None) != getattr(other, a, None):
+                return False
+        return True
+
     # -----------------
     # Mining / Creation
     # -----------------
+    @staticmethod
+    def _meets_difficulty(hash_hex: str, difficulty: int) -> bool:
+        if difficulty <= 0:
+            return True
+        return hash_hex.startswith("0" * difficulty)
+
     @classmethod
     def mine_with_transactions(
         cls,
         miner: User,
         transactions: list[Transaction]
     ) -> "Block":
-        # Validate all transactions first
+        # Validate all transactions first (user transactions only)
         for tx in transactions:
             try:
                 tx.validate()
@@ -120,18 +150,44 @@ class Block:
         if previous_block.calculated_hash is None:
             raise InvalidBlockException("Previous block has no calculated hash.")
 
+        # Determine current difficulty
+        from services import DifficultyService
+        current_difficulty = DifficultyService.current_difficulty
+
+        # Initialize block with provided transactions
         block = cls(
             number=previous_block.number + 1,
             miner_address=miner.address,
             version=1,
-            difficulty=0,
+            difficulty=current_difficulty,
             previous_hash=previous_block.calculated_hash,
             nonce=0,
             transactions=transactions
         )
 
-        # Compute final hash
-        block.calculated_hash = block.compute_hash()
+        # Append mining reward transaction before PoW
+        reward_tx = Transaction.create_mining_reward(miner.address, transactions)
+        block.transactions = [*transactions, reward_tx]
+        # Recompute merkle root after including reward
+        from services import CryptographyService
+        crypto_service = CryptographyService()
+        block.merkle_root = crypto_service.find_merkle_root_for_list([tx.to_hash() for tx in block.transactions])
+
+        # Proof-of-Work: find nonce so that hash meets difficulty target
+        from time import perf_counter
+        start = perf_counter()
+        while True:
+            candidate_hash = block.compute_hash()
+            if cls._meets_difficulty(candidate_hash, block.difficulty or 0):
+                block.calculated_hash = candidate_hash
+                break
+            block.nonce += 1
+        duration = perf_counter() - start
+        block.mined_duration = duration
+
+        # Update difficulty stats for future blocks
+        DifficultyService.update_time_to_mine(duration)
+
         # Do not alter ledger/pool here; return the mined block for caller to handle
         return block
 
@@ -184,9 +240,39 @@ class Block:
                     reasons.append("previous_hash does not match previous block hash.")
                 if self.number != previous_block.number + 1:
                     reasons.append("Block number not sequential.")
-            # Transaction count
-            if not (5 <= len(self.transactions) <= 10):
-                reasons.append("Non-genesis block must have between 5 and 10 transactions.")
+            # Transaction rules (non-genesis): 5-10 user transfers + exactly 1 mining reward
+            try:
+                from models.enum import TransactionType
+                from decimal import Decimal
+                user_txs = [tx for tx in self.transactions if getattr(tx, "kind", None) == TransactionType.TRANSFER]
+                reward_txs = [tx for tx in self.transactions if getattr(tx, "kind", None) == TransactionType.MINING_REWARD]
+                if not (5 <= len(user_txs) <= 10):
+                    reasons.append("Non-genesis block must have between 5 and 10 user transactions.")
+                if len(reward_txs) != 1:
+                    reasons.append("Block must contain exactly one mining reward transaction.")
+                else:
+                    reward_tx = reward_txs[0]
+                    # Validate reward correctness against included user txs
+                    expected_amount = Decimal(50)
+                    for tx in user_txs:
+                        expected_amount += tx.fee
+                    if reward_tx.sender_address is not None:
+                        reasons.append("Mining reward must not have a sender address.")
+                    if reward_tx.fee != Decimal(0):
+                        reasons.append("Mining reward fee must be zero.")
+                    if reward_tx.receiver_address != self.miner_address:
+                        reasons.append("Mining reward must be addressed to the miner.")
+                    if reward_tx.amount != expected_amount:
+                        reasons.append("Mining reward amount is incorrect.")
+            except Exception:
+                # If enum is not resolvable or any unexpected issue occurs, mark invalid
+                reasons.append("Failed to validate mining reward rules.")
+
+            # Basic nonce/difficulty checks
+            if self.nonce < 0:
+                reasons.append("Nonce must be non-negative.")
+            if self.difficulty is None or self.difficulty < 0:
+                reasons.append("Difficulty must be a non-negative integer.")
 
         # Merkle root integrity
         from services import CryptographyService
@@ -199,6 +285,11 @@ class Block:
         recomputed_hash = self.compute_hash()
         if self.calculated_hash != recomputed_hash:
             reasons.append("Block hash mismatch.")
+
+        # Difficulty target check should only apply for non-genesis blocks
+        if self.number != 0 and self.calculated_hash is not None and self.difficulty is not None and self.difficulty >= 0:
+            if not Block._meets_difficulty(self.calculated_hash, self.difficulty):
+                reasons.append("Block hash does not meet difficulty target.")
 
         return (len(reasons) == 0, reasons)
 

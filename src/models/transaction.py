@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
-from decimal import Decimal, ROUND_DOWN, getcontext
+from decimal import Decimal, ROUND_DOWN
 
 from exceptions.transaction import InvalidTransactionException, InsufficientBalanceException
 from .wallet import Wallet
@@ -212,7 +212,15 @@ class Transaction(AbstractHashableModel):
         return True
 
     def _validate_mining_reward(self) -> bool:
-        raise NotImplementedError("Mining reward validation not implemented yet.")
+        """Mining reward must be system-generated: no sender, zero fee, amount >= 50 and no signature requirement."""
+        from decimal import Decimal
+        if self.sender_address is not None:
+            raise InvalidTransactionException("Mining reward transaction must not have a sender address.")
+        if self.fee != Decimal(0):
+            raise InvalidTransactionException("Mining reward transaction fee must be zero.")
+        if self.amount < Decimal(50):
+            raise InvalidTransactionException("Mining reward amount must be at least base reward (50).")
+        return True
 
     def _validate_signup_reward(self) -> bool:
         """
