@@ -1,5 +1,3 @@
-import os
-import tempfile
 import unittest
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
@@ -8,8 +6,6 @@ import pytest
 
 from exceptions.transaction import InvalidTransactionException, InsufficientBalanceException
 from models import User, Transaction, Block, Wallet
-from models.constants import FilesAndDirectories
-from repositories.user import UserRepository
 from services import FileSystemService, InitializationService
 
 
@@ -31,7 +27,7 @@ class TestTransactionValidation(unittest.TestCase):
     def test_transaction_created_with_sufficient_balance_is_added_to_pool(self):
         """
         When creating a transaction:
-        ✅ If user has enough balance → transaction must be added to the pool as pending.
+        If user has enough balance → transaction must be added to the pool as pending.
         """
         pass
 
@@ -39,7 +35,7 @@ class TestTransactionValidation(unittest.TestCase):
     def test_transaction_created_with_insufficient_balance_is_rejected(self):
         """
         When creating a transaction:
-        ❌ If user does NOT have enough balance → transaction creation must be rejected.
+        If user does NOT have enough balance → transaction creation must be rejected.
         """
         pass
 
@@ -47,7 +43,7 @@ class TestTransactionValidation(unittest.TestCase):
     def test_invalid_transaction_creation_is_rejected(self):
         """
         When creating a transaction:
-        ❌ Any invalid transaction must be rejected (e.g., negative amount, invalid receiver).
+        Any invalid transaction must be rejected (e.g., negative amount, invalid receiver).
         """
         pass
 
@@ -59,7 +55,7 @@ class TestTransactionValidation(unittest.TestCase):
     def test_miner_detects_tampered_signature_transaction_as_invalid(self, mock_from_address, mock_find_by_address, mock_get_data_root):
         """
         When mining a block:
-        ✅ Tampered or invalid transactions must be detected and flagged as invalid by the miner.
+        Tampered or invalid transactions must be detected and flagged as invalid by the miner.
         """
 
         original_sender = User.create("sender", "secret")
@@ -95,7 +91,7 @@ class TestTransactionValidation(unittest.TestCase):
     def test_miner_detects_invalid_funds_transaction_as_invalid(self, mock_username_exists, mock_find_by_address, mock_get_data_root):
         """
         When mining a block:
-        ✅ Tampered or invalid transactions must be detected and flagged as invalid by the miner.
+        Tampered or invalid transactions must be detected and flagged as invalid by the miner.
         """
 
         from blockchain import Ledger, Pool
@@ -112,7 +108,7 @@ class TestTransactionValidation(unittest.TestCase):
         self.__class__._user_addresses[user4.address] = user4
         self.__class__._user_addresses[user5.address] = user5
 
-        # Create both signup transactions to fund the users
+        # Create signup transactions to fund the users
         signup_tx1 = Transaction.create_signup_reward(user1.address) # Wallet 50
         signup_tx2 = Transaction.create_signup_reward(user2.address) # Wallet 50
         signup_tx3 = Transaction.create_signup_reward(user3.address) # Wallet 50
@@ -125,10 +121,16 @@ class TestTransactionValidation(unittest.TestCase):
         Pool.get_instance().add_transaction(signup_tx4)
         Pool.get_instance().add_transaction(signup_tx5)
 
-        Ledger.get_instance().add_block(Block.mine_with_transactions(
-            miner=user1,
-            transactions=[signup_tx1, signup_tx2, signup_tx3, signup_tx4, signup_tx5]
-        ))
+        # Mine and add a block to confirm signup rewards; ensure miner is not user1 to avoid double-funding user1
+        from services.difficulty_service import DifficultyService
+        with patch.object(DifficultyService, "current_difficulty", 1), \
+             patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
+            upd_mock.return_value = None
+            funding_block = Block.mine_with_transactions(
+                miner=user5,
+                transactions=[signup_tx1, signup_tx2, signup_tx3, signup_tx4, signup_tx5]
+            )
+        Ledger.get_instance().add_block(funding_block)
 
         invalid_transaction1 = Transaction.create(user1, user2.address, Decimal(100), Decimal(0.1))
         invalid_transaction2 = Transaction.create(user1, user2.address, Decimal(50), Decimal(0.1))
@@ -161,7 +163,7 @@ class TestTransactionValidation(unittest.TestCase):
     def test_flagged_invalid_transaction_is_canceled_on_creator_login(self):
         """
         When creator of a flagged transaction logs in:
-        ✅ The transaction must be automatically canceled and removed from pending state.
+        The transaction must be automatically canceled and removed from pending state.
         """
         pass
 

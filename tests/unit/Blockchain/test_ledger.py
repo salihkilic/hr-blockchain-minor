@@ -57,14 +57,15 @@ class TestLedger(unittest.TestCase):
         latest_block = Ledger.get_instance().get_latest_block()
         self.assertIsNotNone(latest_block)
         self.assertEqual(latest_block.calculated_hash, block.calculated_hash)
-        self.assertEqual(len(latest_block.transactions), len(transactions))
+        # Includes 1 mining reward transaction
+        self.assertEqual(len(latest_block.transactions), len(transactions) + 1)
 
         # Destroy and reload the ledger to verify persistence
         Ledger.destroy_instance()
         reloaded_latest_block = Ledger.get_instance().get_latest_block()
         self.assertIsNotNone(reloaded_latest_block)
         self.assertEqual(reloaded_latest_block.calculated_hash, block.calculated_hash)
-        self.assertEqual(len(reloaded_latest_block.transactions), len(transactions))
+        self.assertEqual(len(reloaded_latest_block.transactions), len(transactions) + 1)
 
     @pytest.mark.unit
     @patch("services.filesystem_service.FileSystemService.get_data_root",
@@ -80,5 +81,3 @@ class TestLedger(unittest.TestCase):
     @pytest.mark.skip(reason="TODO")
     def test_validates_that_transactions_are_in_the_pool(self):
         pass
-
-
