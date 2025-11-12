@@ -66,6 +66,17 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(reloaded_latest_block.calculated_hash, block.calculated_hash)
         self.assertEqual(len(reloaded_latest_block.transactions), len(transactions))
 
+    @pytest.mark.unit
+    @patch("services.filesystem_service.FileSystemService.get_data_root",
+           side_effect=FileSystemService.get_temp_data_root)
+    def test_find_block_by_nr_for_genesis_block(self, mock_get_data_root):
+        ledger = Ledger.get_instance()
+
+        genesis_block = ledger.get_block_by_number(0)
+        self.assertIsNotNone(genesis_block)
+        self.assertEqual(genesis_block.number, 0)
+
+
     @pytest.mark.skip(reason="TODO")
     def test_validates_that_transactions_are_in_the_pool(self):
         pass

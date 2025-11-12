@@ -1,18 +1,42 @@
 from typing import Optional
 from datetime import datetime
 
+from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from exceptions.mining import InvalidBlockException
 from models import Transaction, Block
 from models.enum.transaction_type import TransactionType
 
 
-class Pool(AbstractPickableSingleton):
+class Pool(AbstractPickableSingleton, Subscribable):
     _transactions: list[Transaction]
+    _transactions_marked_for_block: list[Transaction]
 
     def __init__(self):
         self._transactions = []
+        self._transactions_marked_for_block = []
         super().__init__()
+
+    @classmethod
+    def _save(cls) -> None:
+        # Notify subscribers about the updated transactions change before saving
+        super()._save()
+        cls._call_subscribers(None)
+
+    def mark_transaction_for_block(self, transaction: Transaction) -> None:
+        self.get_instance()._transactions_marked_for_block.append(transaction)
+        self._save()
+
+    def unmark_transaction_for_block(self, transaction: Transaction) -> None:
+        self.get_instance()._transactions_marked_for_block.remove(transaction)
+        self._save()
+
+    def get_transactions_marked_for_block(self) -> list[Transaction]:
+        return self.get_instance()._transactions_marked_for_block
+
+    def unmark_all_transaction(self):
+        self.get_instance()._transactions_marked_for_block = []
+        self._save()
 
     def add_transaction(self, transaction: Transaction) -> None:
         transaction.validate()
@@ -29,6 +53,9 @@ class Pool(AbstractPickableSingleton):
 
     def get_transactions(self) -> list[Transaction]:
         return self.get_instance()._transactions
+
+    def get_transaction_without_marked_for_block(self) -> list[Transaction]:
+        return [tx for tx in self.get_instance()._transactions if tx not in self.get_instance()._transactions_marked_for_block]
 
     def get_required_transactions(self, max_timestamp: Optional[str] = None) -> Optional[list[Transaction]]:
         """
@@ -85,7 +112,11 @@ class Pool(AbstractPickableSingleton):
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:
-        return super().load()
+        loaded = super().load()
+        if loaded is not None:
+            # Reset marked for block list on load
+            loaded._transactions_marked_for_block = []
+        return loaded
 
     @classmethod
     def get_instance(cls) -> "Pool":

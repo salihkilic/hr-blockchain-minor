@@ -148,9 +148,9 @@ class Ledger(AbstractPickableSingleton):
             raise InvalidBlockException("Only accepted or genesis blocks can be added to the ledger.")
         self._blocks[block.calculated_hash] = block
         self._latest_block = block
+        self._save()
         from blockchain import Pool
         Pool.get_instance().remove_transactions(block.transactions)
-        self._save()
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

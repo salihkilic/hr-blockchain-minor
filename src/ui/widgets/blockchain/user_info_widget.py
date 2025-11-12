@@ -1,11 +1,20 @@
+from decimal import Decimal
+
 from faker import Faker
+from textual import log
 from textual.app import RenderResult, ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll, Container
+from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
-from models import User
+from blockchain import Pool
+from models import User, Wallet
+from models.dto import UIAlert
+from models.enum import AlertType
+from services.user_service import UserService
 from .transaction_listing_widget import TransactionListingWidget
+from ...screens.utils import AlertScreen
 
 
 class UserInfoWidget(Widget):
@@ -27,31 +36,82 @@ class UserInfoWidget(Widget):
                 width: 100%;
                 text-style: bold;
             }
+            .block__title--inverted {
+                background: rgba(0, 0, 0, 0.0);
+                color: blueviolet;
+            }
+            .col__label--warning {
+                color: orange;
+            }
         """
+
+    logged_in_user: User | None = reactive(None, recompose=True)
+    balance: Decimal = reactive(Decimal("0.00"), recompose=True)
+    reserved_balance: Decimal = reactive(Decimal("0.00"), recompose=True)
+    unconfirmed_balance: Decimal = reactive(Decimal("0.00"), recompose=True)
 
     def __init__(self, ):
         super().__init__()
+        self.logged_in_user = UserService.logged_in_user
+        self.update_balance(None)
+
+    def on_mount(self):
+        UserService.subscribe(self.update_user)
+        Pool.subscribe(self.update_balance)
+
+    def update_user(self, user: User | None):
+        log(f"UserInfoWidget received user update: {user.username if user else 'None'}")
+        self.logged_in_user = user
+        self.update_balance(None)
+
+    def update_balance(self, data):
+        log("UserInfoWidget received pool update")
+        if self.logged_in_user is None:
+            self.balance = Decimal("0.00")
+            self.reserved_balance = Decimal("0.00")
+            self.unconfirmed_balance = Decimal("0.00")
+            return
+        wallet = Wallet.from_user(self.logged_in_user)
+        self.balance = wallet.balance
+        self.reserved_balance = wallet.reserved_balance
+        self.unconfirmed_balance = wallet.unconfirmed_balance
 
     def compose(self) -> ComposeResult:
+        log("Composing UserInfoWidget with logged_in_user: {}".format(self.logged_in_user))
 
-        logged_in_user = User(
-            username=Faker().user_name(),
-            password_hash=Faker().sha256(),
-            public_key=Faker().sha256(),
-            private_key=Faker().sha256(),
-            salt="static_salt",
-            key_type="RSA"
-        )
+        if self.logged_in_user is None:
+            yield Vertical(
+                Label(f"Log in or register to use this module", classes=("block__title block__title--inverted")),
+                Vertical(
+                    Horizontal(
+                        Button("Login or register", id="login", classes="button"),
+                        classes="col"
+                    ),
+                    classes="row"
+                ),
+            )
+            return
 
         txs = []
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
+        balance = self.balance.quantize(Decimal("0.00"))
+        reserved_balance = self.reserved_balance.quantize(Decimal("0.00")).__abs__()
+        spendable_balance = (self.balance + self.reserved_balance).quantize(Decimal("0.00"))
+        unconfirmed_balance = self.unconfirmed_balance.quantize(Decimal("0.00"))
+
+
         yield Vertical(
-            Label(f"User: {logged_in_user.username}", classes="block__title"),
+            Label(f"User: {self.logged_in_user.username}", classes="block__title"),
             Vertical(
                 Horizontal(
-                    Label("Balance: 79.0", classes="col__label"),
-                    Label("Reserved: 10.0", classes="col__label"),
+                    Label(f"Balance: {balance}", classes="col__label"),
+                    Label(f"Spendable: {spendable_balance}", classes="col__label"),
+                    classes="col"
+                ),
+                Horizontal(
+                    Label(f"Reserved: {reserved_balance}", classes="col__label"),
+                    Label(f"Unconfirmed: {unconfirmed_balance}", classes="col__label"),
                     classes="col"
                 ),
                 classes="row"
@@ -78,18 +138,24 @@ class UserInfoWidget(Widget):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "create_transaction":
             self.app.push_screen("transaction_create_screen")
-
-        #
-        # yield Vertical(
-        #     Label(f"State mined"),
-        #     Rule(line_style="heavy"),
-        #     Label(f"Block #{visible_block}"),
-        #     Rule(line_style="heavy"),
-        #     Horizontal(
-        #         Button("Previous Block", id="prev_block"),
-        #         Button("Next Block", id="next_block", disabled=True),
-        #         classes="button-row"
-        #     ),
-        #     *txs_widgets,
-        #     Rule(line_style="heavy"),
-        # )
+        if event.button.label == "Logout":
+            user_service = UserService()
+            user_service.logout()
+        if event.button.id == "login":
+            self.app.push_screen("login_screen")
+        if event.button.label == "Show public key":
+            if self.logged_in_user is not None:
+                self.app.push_screen(AlertScreen(UIAlert(
+                    title="Public Key",
+                    message=self.logged_in_user.public_key,
+                    dismissed_automatically=False,
+                    alert_type=AlertType.INFO
+                )))
+        if event.button.label == "Show private key":
+            if self.logged_in_user is not None:
+                self.app.push_screen(AlertScreen(UIAlert(
+                    title="Private Key",
+                    message=self.logged_in_user.private_key,
+                    dismissed_automatically=False,
+                    alert_type=AlertType.DANGER
+                )))

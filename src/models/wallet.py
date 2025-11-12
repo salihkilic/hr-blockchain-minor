@@ -48,13 +48,25 @@ class Wallet:
 
         # Traverse all blocks and transactions to calculate balance
         for block in ledger.get_all_blocks():
+            from models.block import BlockStatus
+            if block.status != BlockStatus.ACCEPTED:
+                continue
             for transaction in block.transactions:
                 if transaction.receiver_address == self.address:
                     balance += transaction.amount
                 if transaction.sender_address == self.address:
                     balance -= (transaction.amount + transaction.fee)
 
-        # Also consider pending transactions in the pool, ignore incoming because they are not confirmed yet
+        return balance
+
+    @property
+    def reserved_balance(self) -> Decimal:
+        """
+        Get the reserved balance of this wallet (amount locked in pending transactions).
+        """
+        balance = Decimal("0.0")
+
+        from blockchain import Pool
         pool = Pool.get_instance()
         for transaction in pool.get_transactions():
             if transaction.sender_address == self.address:
@@ -62,4 +74,24 @@ class Wallet:
 
         return balance
 
+    @property
+    def spendable_balance(self) -> Decimal:
+        """
+        Get the spendable balance of this wallet (confirmed balance minus reserved balance).
+        """
+        return self.balance + self.reserved_balance
 
+    @property
+    def unconfirmed_balance(self) -> Decimal:
+        """
+        Get the unconfirmed balance of this wallet from the transactions in the pool.
+        """
+        balance = Decimal("0.0")
+
+        from blockchain import Pool
+        pool = Pool.get_instance()
+        for transaction in pool.get_transactions():
+            if transaction.receiver_address == self.address:
+                balance += transaction.amount
+
+        return balance
