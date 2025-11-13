@@ -95,11 +95,9 @@ class UserRegisterScreen(Screen):
 
         self._clear_inputs()
 
-        user_service.login(self.username, self.password)
-
         self.app.switch_screen(AlertScreen(UIAlert(
             title="Registration successful",
-            message="You have been registered successfully. You are now logged in.",
+            message="You have been registered successfully. You can now log in.",
             alert_type=AlertType.SUCCESS
         )))
 

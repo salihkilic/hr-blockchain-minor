@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from enum import Enum
 
+from textual import log
+
 from exceptions.mining import InvalidBlockException
 from exceptions.transaction import InvalidTransactionException
 from .user import User
@@ -244,7 +246,7 @@ class Block:
             try:
                 from models.enum import TransactionType
                 from decimal import Decimal
-                user_txs = [tx for tx in self.transactions if getattr(tx, "kind", None) == TransactionType.TRANSFER]
+                user_txs = [tx for tx in self.transactions if getattr(tx, "kind", None) == TransactionType.TRANSFER or getattr(tx, "kind", None) == TransactionType.SIGNUP_REWARD]
                 reward_txs = [tx for tx in self.transactions if getattr(tx, "kind", None) == TransactionType.MINING_REWARD]
                 if not (5 <= len(user_txs) <= 10):
                     reasons.append("Non-genesis block must have between 5 and 10 user transactions.")

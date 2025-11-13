@@ -54,12 +54,19 @@ class BlockInfoWidget(Widget):
 
     def __init__(self, ):
         super().__init__()
-        latest_block = Ledger.get_instance().get_latest_block()
-        self.visible_block_number = latest_block.number if latest_block is not None else 0
+        pending_block = Ledger.get_instance().get_pending_block()
+        log(f"Initializing BlockInfoWidget, pending block: {pending_block}")
+        if pending_block is not None:
+            self.visible_block_number = pending_block.number
+        else:
+            latest_block = Ledger.get_instance().get_latest_block()
+            if latest_block is not None:
+                self.visible_block_number = latest_block.number
+
 
     def compose(self) -> ComposeResult:
         log(f"Composing BlockInfoWidget for block number: {self.visible_block_number}")
-        visible_block = Ledger.get_instance().get_block_by_number(self.visible_block_number)
+        visible_block = Ledger.get_instance().get_block_by_number(number=self.visible_block_number, include_pending=True)
 
         if visible_block is None:
             yield Vertical(
@@ -67,7 +74,7 @@ class BlockInfoWidget(Widget):
             )
             return
 
-        is_last_block = visible_block == Ledger.get_instance().get_latest_block()
+        is_last_block = visible_block == Ledger.get_instance().get_latest_block(include_pending=True)
         is_first_block = visible_block is not None and visible_block.number == 0
 
         txs = visible_block.transactions
@@ -124,6 +131,6 @@ class BlockInfoWidget(Widget):
             else:
                 log(f"Already at the first block, cannot go back further.")
         if event.button.id == "next_block":
-            latest_block = Ledger.get_instance().get_latest_block()
+            latest_block = Ledger.get_instance().get_latest_block(include_pending=True)
             if latest_block and self.visible_block_number < latest_block.number:
                 self.visible_block_number += 1

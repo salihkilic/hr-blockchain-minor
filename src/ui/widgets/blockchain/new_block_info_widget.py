@@ -83,6 +83,7 @@ class NewBlockInfoWidget(Widget):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "mine_block":
-            self.app.push_screen("block_mining_screen")
+            from ui.screens.blockchain import BlockMiningScreen
+            self.app.push_screen(BlockMiningScreen())
         if event.button.id == "move_all_blocks":
             Pool.get_instance().unmark_all_transaction()

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 
 from textual import log
 from textual.app import RenderResult, ComposeResult
@@ -37,12 +38,20 @@ class TransactionListingWidget(Widget):
     """
 
     is_marked_for_block = reactive(False, recompose=True)
+    can_be_moved = reactive(False, recompose=True)
 
     def __init__(self, transaction: Transaction, show_move_buttons: bool = True):
-        self.transaction = transaction
-        self.show_move_buttons = show_move_buttons
-        self.set_reactive(TransactionListingWidget.is_marked_for_block, Pool.get_instance().get_transactions_marked_for_block().__contains__(self.transaction))
         super().__init__()
+        self.transaction = transaction
+        self.set_reactive(TransactionListingWidget.is_marked_for_block, Pool.get_instance().get_transactions_marked_for_block().__contains__(self.transaction))
+        self.set_reactive(TransactionListingWidget.can_be_moved, UserService.logged_in_user is not None)
+        self.show_move_buttons = show_move_buttons and self.can_be_moved
+
+    def on_mount(self):
+        UserService.subscribe(self.update_can_be_moved)
+
+    def update_can_be_moved(self, user):
+        self.can_be_moved = user is not None
 
     def compose(self) -> ComposeResult:
         classes = ""
@@ -55,12 +64,11 @@ class TransactionListingWidget(Widget):
         if self.show_move_buttons:
             move_buttons = [
                 Horizontal(
-                    Button("Move to pool", id="move_to_pool", classes="button", disabled=not self.is_marked_for_block),
-                    Button("Move to block", id="move_to_block", classes="button", disabled=self.is_marked_for_block),
+                    Button("Move to pool", id="move_to_pool", classes="button", disabled=not self.is_marked_for_block or not self.can_be_moved),
+                    Button("Move to block", id="move_to_block", classes="button", disabled=self.is_marked_for_block or not self.can_be_moved),
                     classes="button_col"
                 ),
             ]
-
 
         yield Collapsible(
             Label(f"Type: {self.transaction.kind.value.upper()}"),

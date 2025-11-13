@@ -45,7 +45,6 @@ class TransactionPoolWidget(Widget):
         self.mutate_reactive(TransactionPoolWidget.transactions)
 
     def update_show_add_required(self, user):
-        log("User state changed, updating show_add_required...")
         self.show_add_required = user is not None
 
 
