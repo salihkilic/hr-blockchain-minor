@@ -89,3 +89,8 @@ class AbstractPickableSingleton(ABC):
             return
         cls._save()
         cls._instance = None
+
+    @classmethod
+    def force_save(cls):
+        """ Force saving the current instance to disk. FOR DEBUGGING PURPOSES ONLY. """
+        cls._save()

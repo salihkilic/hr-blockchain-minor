@@ -58,7 +58,7 @@ class TransactionPoolWidget(Widget):
                 children.append(
                     Button("Add required transactions to block", classes="button button--add", id="add_required_txs")
                 )
-            else:
+            elif len(Pool.get_instance().get_transactions()) > 0:
                 children.append(
                     Static("Not enough transactions for block", classes="alert alert--warning")
                 )

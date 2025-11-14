@@ -56,7 +56,7 @@ class AlertScreen(Screen):
 
     async def on_mount(self) -> None:
         if self.alert.dismissed_automatically:
-            self.set_timer(5, lambda: self.app.call_later(self._dismiss_alert))
+            self.set_timer(4, lambda: self.app.call_later(self._dismiss_alert))
 
     def _dismiss_alert(self):
         if self.terminate_after_dismiss:

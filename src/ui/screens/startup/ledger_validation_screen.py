@@ -4,13 +4,15 @@ from textual.app import ComposeResult
 from textual.containers import Vertical, Container
 from textual.screen import Screen
 from textual.widgets import Footer, Label, LoadingIndicator
+
+from exceptions.mining import InvalidBlockException
+from exceptions.transaction import InvalidTransactionException
 from models.dto import UIAlert
 from models.enum import AlertType
 from ui.screens.utils.alert_screen import AlertScreen
 
 
 class LedgerValidationScreen(Screen):
-
     DEFAULT_CSS = """
         Button {
             margin: 0 2;
@@ -56,32 +58,30 @@ class LedgerValidationScreen(Screen):
 
     @work(exclusive=True, thread=True)
     def _validate_ledger(self):
+        from blockchain import Ledger
         try:
-            # TODO Validate ledger
+            time.sleep(1)  # Small delay to ensure loading indicator is visible
+            (valid, errors) = Ledger.get_instance().validate_chain()
+        except InvalidTransactionException as e:
+            valid = False
+            errors = [str(e)]
+        except InvalidBlockException as e:
+            valid = False
+            errors = [str(e)]
 
-            import random
-            will_fail = random.choice([True, False])
-
-            time.sleep(2)
-
-            if will_fail:
-                raise Exception(f"DEBUG LEDGER VALIDATION FAILURE \n at {__file__}" )
-
-        except Exception as e:
+        if not valid:
             self.app.call_from_thread(
                 self.app.switch_screen,
                 AlertScreen(UIAlert(
                     title="Ledger validation failed",
-                    message=f"The ledger validation failed due to an error: {e}",
+                    message=f"The ledger validation failed due to {'an' if len(errors) == 1 else ''} error{'s' if len(errors) > 1 else ''}:\n{'\n'.join(errors)}",
                     alert_type=AlertType.DANGER,
                     dismissed_automatically=False
                 ), terminate_after_dismiss=True)
             )
             return
 
-            # success case
         self.app.call_from_thread(self.show_ledger_valid)
-
 
     def show_ledger_valid(self):
         from ui.screens.startup import BlockValidationScreen

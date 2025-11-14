@@ -177,7 +177,7 @@ class Transaction(AbstractHashableModel):
 
         if not sender_wallet:
             if raise_exception:
-                raise InvalidTransactionException("Sender's wallet could not be found.")
+                raise InvalidTransactionException(f"Sender's wallet could not be found. Transaction {self.hash}")
             return False
 
         required_balance = self.amount + self.fee
@@ -186,20 +186,20 @@ class Transaction(AbstractHashableModel):
 
         if sender_balance < required_balance:
             if raise_exception:
-                raise InsufficientBalanceException("Insufficient balance for this transaction.")
+                raise InsufficientBalanceException(f"Insufficient balance for this transaction. Transaction {self.hash}")
             return False
 
         senders_public_key = self.sender_public_key
         if not senders_public_key:
             if raise_exception:
-                raise InvalidTransactionException("Sender's public key is missing.")
+                raise InvalidTransactionException(f"Sender's public key is missing. Transaction {self.hash}")
             return False
 
         signature = self.sender_signature
 
         if not signature:
             if raise_exception:
-                raise InvalidTransactionException("Transaction signature is missing.")
+                raise InvalidTransactionException(f"Transaction signature is missing. Transaction {self.hash}")
             return False
 
         valid = self.cryptography_service.validate_signature(
@@ -210,7 +210,7 @@ class Transaction(AbstractHashableModel):
 
         if not valid:
             if raise_exception:
-                raise InvalidTransactionException("Invalid transaction signature.")
+                raise InvalidTransactionException(f"Invalid transaction signature. Transaction {self.hash}")
             return False
 
         return True
@@ -219,11 +219,11 @@ class Transaction(AbstractHashableModel):
         """Mining reward must be system-generated: no sender, zero fee, amount >= 50 and no signature requirement."""
         from decimal import Decimal
         if self.sender_address is not None:
-            raise InvalidTransactionException("Mining reward transaction must not have a sender address.")
+            raise InvalidTransactionException(f"Mining reward transaction must not have a sender address. Transaction {self.hash}")
         if self.fee != Decimal(0):
-            raise InvalidTransactionException("Mining reward transaction fee must be zero.")
+            raise InvalidTransactionException(f"Mining reward transaction fee must be zero.  Transaction {self.hash}")
         if self.amount < Decimal(50):
-            raise InvalidTransactionException("Mining reward amount must be at least base reward (50).")
+            raise InvalidTransactionException(f"Mining reward amount must be at least base reward (50).  Transaction {self.hash}")
         return True
 
     def _validate_signup_reward(self) -> bool:
@@ -240,13 +240,13 @@ class Transaction(AbstractHashableModel):
         expected_fee = Decimal.from_float(0.0)
 
         if self.sender_address is not None:
-            raise InvalidTransactionException("Signup reward transaction must not have a sender address.")
+            raise InvalidTransactionException(f"Signup reward transaction must not have a sender address. Transaction {self.hash}")
 
         if self.amount != expected_amount:
-            raise InvalidTransactionException(f"Signup reward transaction amount must be {expected_amount}.")
+            raise InvalidTransactionException(f"Signup reward transaction amount must be {expected_amount}. Transaction {self.hash}")
 
         if self.fee != expected_fee:
-            raise InvalidTransactionException("Signup reward transaction fee must be zero.")
+            raise InvalidTransactionException(f"Signup reward transaction fee must be zero. Transaction {self.hash}")
 
         # TODO: Check hash integrity
 

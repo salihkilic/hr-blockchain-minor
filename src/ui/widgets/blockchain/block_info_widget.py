@@ -87,7 +87,17 @@ class BlockInfoWidget(Widget):
                 f"Genesis Block", classes="block__title block__title--genesis"),
         )
 
-        if visible_block.number > 0:
+        if visible_block.status == BlockStatus.PENDING:
+            children.append(
+                Label("This block is pending validation.", classes="block__status block__status--pending")
+            ),
+            valids = visible_block.validation_valid_len()
+            invalids = visible_block.validation_invalid_len()
+            children.append(
+                Label(f"Validations: {valids} valid, {invalids} invalid.", classes="block__status block__status--pending")
+            )
+
+        if visible_block.number > 0 and visible_block.status != BlockStatus.PENDING:
             classes = "block__status"
             if visible_block.status == BlockStatus.ACCEPTED:
                 classes += " block__status--accepted"
