@@ -76,6 +76,7 @@ class TransactionListingWidget(Widget):
             Label(f"Receiver: {self.transaction.receiver_address}"),
             Label(f"Amount: {self.transaction.amount.quantize(Decimal('0.01'))} GCN"),
             Label(f"Fee: {self.transaction.fee.quantize(Decimal('0.01'))} GCN"),
+            Label(f"Created at: {self.transaction.timestamp_datetime.strftime("%d-%m-%Y %H:%M:%S")}"),
             Vertical(
                 *move_buttons,
                 Horizontal(

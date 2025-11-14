@@ -54,7 +54,7 @@ class AlertScreen(Screen):
 
     async def on_mount(self) -> None:
         if self.alert.dismissed_automatically:
-            self.set_timer(3, lambda: self.app.call_later(self.app.pop_screen))
+            self.set_timer(5, lambda: self.app.call_later(self.app.pop_screen))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close":
