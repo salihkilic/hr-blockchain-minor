@@ -2,13 +2,15 @@ from typing import Optional
 
 from textual import log
 
+from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from models import Block
 from models.block import BlockStatus, ValidationFlag
 from exceptions.mining import InvalidBlockException
+from models.enum import TransactionType
 
 
-class Ledger(AbstractPickableSingleton):
+class Ledger(AbstractPickableSingleton, Subscribable):
     # Hash - Block pairs
     _blocks: dict[str, "Block"]
     _latest_block: Optional[Block]
@@ -213,14 +215,17 @@ class Ledger(AbstractPickableSingleton):
         pool = Pool.get_instance()
         # Return valid transactions to pool; flag invalid ones
         for tx in block.transactions:
-            if tx.validate(raise_exception=False):
-                pool.add_transaction(tx)
-            else:
+
+            if tx.kind == TransactionType.MINING_REWARD:
+                continue # Do not return mining rewards to pool
+
+            if not tx.validate(raise_exception=False):
                 # Mark as invalid (attribute added later if needed)
                 if not hasattr(tx, 'is_invalid'):
                     setattr(tx, 'is_invalid', True)
                 else:
                     tx.is_invalid = True
+            pool.add_transaction(tx, raise_exception=False)
         # Remove from pending (not added to chain)
         self._pending_blocks.pop(block.calculated_hash, None)
 
@@ -261,6 +266,11 @@ class Ledger(AbstractPickableSingleton):
 
         Ledger.get_instance().submit_block(block)
         Pool.get_instance().remove_marked_transaction_from_pool()
+
+    @classmethod
+    def _save(cls) -> None:
+        super()._save()
+        cls._call_subscribers(None)
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

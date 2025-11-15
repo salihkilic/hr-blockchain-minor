@@ -32,6 +32,9 @@ class TransactionListingWidget(Widget):
         .transaction--reward {
             background: green 10%;
         }
+        .transaction--invalid {
+            background: red 80%;
+        }
         .button_row {
             margin: 1 0;
         }
@@ -39,6 +42,7 @@ class TransactionListingWidget(Widget):
 
     is_marked_for_block = reactive(False, recompose=True)
     can_be_moved = reactive(False, recompose=True)
+    can_be_removed = reactive(False, recompose=True)
 
     def __init__(self, transaction: Transaction, show_move_buttons: bool = True):
         super().__init__()
@@ -59,6 +63,9 @@ class TransactionListingWidget(Widget):
         if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD:
             classes = "transaction--reward"
 
+        if self.transaction.is_invalid:
+            classes = "transaction--invalid"
+
         move_buttons = []
 
         if self.show_move_buttons:
@@ -70,6 +77,13 @@ class TransactionListingWidget(Widget):
                 ),
             ]
 
+        other_buttons = [
+            Horizontal(
+                Button("Show details", classes="button", id="show_tx_details"),
+                classes="button_col"
+            ),
+        ]
+
         yield Collapsible(
             Label(f"Type: {self.transaction.kind.value.upper()}"),
             Label(f"Sender: {self.transaction.sender_address}"),
@@ -79,10 +93,7 @@ class TransactionListingWidget(Widget):
             Label(f"Created at: {self.transaction.timestamp_datetime.strftime("%d-%m-%Y %H:%M:%S")}"),
             Vertical(
                 *move_buttons,
-                Horizontal(
-                    Button("Show details", classes="button", id="show_tx_details"),
-                    classes="button_col"
-                ),
+                *other_buttons,
                 classes="button_row"
             ),
             title=f"TX {self.transaction.hash}",

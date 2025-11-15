@@ -165,6 +165,10 @@ class FileSystemService:
 
         Returns the entry that was stored.
         """
+
+        # Strip any leading directory components from data_filename
+        data_filename = os.path.basename(data_filename)
+
         file_path = self.get_data_file_path(data_filename, create_if_missing=False)
         self.validate_file_exists(file_path, throw_exception=True)
 
@@ -240,6 +244,27 @@ class FileSystemService:
                 self.update_hash_for_file(fn)
             except RequestedFileDoesNotExistException:
                 pass  # skip missing files
+
+    def can_hash_store_be_initialized(self):
+        """ Checks if the has store can be initialized (i.e., all data files exist, but are empty). """
+        targets = [
+            FilesAndDirectories.LEDGER_FILE_NAME,
+            FilesAndDirectories.POOL_FILE_NAME,
+            FilesAndDirectories.USERS_DB_FILE_NAME,
+        ]
+        for fn in targets:
+            try:
+                file_path = self.get_data_file_path(fn, create_if_missing=False)
+                if os.path.getsize(file_path) > 0:
+                    return False
+            except RequestedFileDoesNotExistException:
+                return False
+        return True
+
+    def hash_store_exists(self) -> bool:
+        """ Checks if a hash store file already exists. """
+        path = self.get_hash_store_path()
+        return os.path.exists(path)
 
     @classmethod
     def get_temp_data_root(cls, create_if_missing: bool = False) -> str:

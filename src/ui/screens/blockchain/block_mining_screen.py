@@ -47,7 +47,6 @@ class BlockMiningScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Vertical(
-            Label("Mining block nr: 25"),
             Label("Mining will take approximately 10 to 20 seconds."),
             Container(
                 LoadingIndicator(),

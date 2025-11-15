@@ -137,7 +137,8 @@ class UserInfoWidget(Widget):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "create_transaction":
-            self.app.push_screen("transaction_create_screen")
+            from ui.screens.blockchain import TransactionCreateScreen
+            self.app.push_screen(TransactionCreateScreen())
         if event.button.label == "Logout":
             user_service = UserService()
             user_service.logout()

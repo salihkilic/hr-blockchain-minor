@@ -27,7 +27,7 @@ class TransactionPoolWidget(Widget):
                 margin: 0 0 1 0;
             }
             .alert--warning {
-                background: darkorange;
+                background: orange 10%;
                 padding: 1 1;
                 margin: 0 0 1 0;
                 text-align: center;
@@ -58,7 +58,7 @@ class TransactionPoolWidget(Widget):
                 children.append(
                     Button("Add required transactions to block", classes="button button--add", id="add_required_txs")
                 )
-            else:
+            elif len(Pool.get_instance().get_transactions()) > 0:
                 children.append(
                     Static("Not enough transactions for block", classes="alert alert--warning")
                 )

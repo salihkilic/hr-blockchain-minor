@@ -38,8 +38,8 @@ class Pool(AbstractPickableSingleton, Subscribable):
         self.get_instance()._transactions_marked_for_block = []
         self._save()
 
-    def add_transaction(self, transaction: Transaction) -> None:
-        transaction.validate()
+    def add_transaction(self, transaction: Transaction, raise_exception: bool = True) -> None:
+        transaction.validate(raise_exception)
         self.get_instance()._transactions.append(transaction)
         self._save()
 
@@ -115,6 +115,19 @@ class Pool(AbstractPickableSingleton, Subscribable):
         marked_txs = self.get_instance()._transactions_marked_for_block
         self.remove_transactions(marked_txs)
         self.unmark_all_transaction()
+
+    def get_invalid_transactions_for_sender_address(self, sender_address: str) -> list[Transaction]:
+        """ Get all transactions from pool for the given sender address that are invalid. """
+        invalid_txs = []
+        for tx in self.get_instance()._transactions:
+            if tx.sender_address == sender_address and tx.is_invalid:
+                invalid_txs.append(tx)
+        return invalid_txs
+
+    def cancel_transaction(self, transaction: Transaction) -> None:
+        """ Cancel a transaction in the pool. """
+        self.remove_transaction(transaction)
+        self._save()
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

@@ -5,6 +5,7 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
+from blockchain import Ledger
 from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget, UserInfoWidget, NewBlockInfoWidget
 
 
