@@ -66,6 +66,10 @@ class NewBlockInfoWidget(Widget):
         self.mutate_reactive(NewBlockInfoWidget.marked_transactions)
 
     def compose(self) -> ComposeResult:
+
+        txs = self.marked_transactions
+        txs.sort(key=lambda tx: tx.timestamp)
+
         yield Vertical(
             Label(f"New block", classes="block__title"),
             Vertical(
@@ -78,7 +82,7 @@ class NewBlockInfoWidget(Widget):
             ),
             Label(f"Transactions ({len(self.marked_transactions)}):", classes="block__title"),
             VerticalScroll(
-                *list(map(lambda tx: TransactionListingWidget(tx), self.marked_transactions)),
+                *list(map(lambda tx: TransactionListingWidget(tx), txs)),
                 classes="transactions_scroll"
             )
         )
