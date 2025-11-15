@@ -6,6 +6,18 @@ class InitializationService:
         filesystem_service = FileSystemService()
         filesystem_service.initialize_data_files()
 
+        if not filesystem_service.hash_store_exists():
+            if not filesystem_service.can_hash_store_be_initialized():
+                cls.exit_with_error_message("Hash store cannot be initialized because of existing data files. The system cannot verify integrity.")
+            filesystem_service.initialize_hash_store()
+        else:
+            results = filesystem_service.verify_all_data_files()
+            one_or_more_failures = any(not results[file]['ok'] for file in results)
+            if one_or_more_failures:
+                reasons = [f"{file}: {results[file]['reason']}" for file in results if not results[file]['ok']]
+                cls.exit_with_error_message(f"Data file integrity verification failed:\n" + "\n".join(reasons))
+
+
         from repositories.user import UserRepository
         user_repository = UserRepository()
         user_repository.setup_database_structure()
@@ -14,3 +26,8 @@ class InitializationService:
         Pool.get_instance()
         from blockchain import Ledger
         Ledger.get_instance()
+
+    @classmethod
+    def exit_with_error_message(cls, message: str):
+        print(f"\n\033[91m{message}\033[0m\n")
+        exit(1)
