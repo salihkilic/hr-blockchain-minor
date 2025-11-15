@@ -51,7 +51,8 @@ class NewBlockInfoWidget(Widget):
             }
         """
 
-    marked_transactions: list[Transaction] = reactive(Pool.get_instance().get_transactions_marked_for_block, recompose=True)
+    marked_transactions: list[Transaction] = reactive(Pool.get_instance().get_transactions_marked_for_block,
+                                                      recompose=True)
     valid_for_mining: bool = reactive(False, recompose=True)
 
     def __init__(self, ):
@@ -75,6 +76,7 @@ class NewBlockInfoWidget(Widget):
                 ),
                 classes="button_row"
             ),
+            Label(f"Transactions ({len(self.marked_transactions)}):", classes="block__title"),
             VerticalScroll(
                 *list(map(lambda tx: TransactionListingWidget(tx), self.marked_transactions)),
                 classes="transactions_scroll"

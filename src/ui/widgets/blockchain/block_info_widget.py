@@ -84,10 +84,12 @@ class BlockInfoWidget(Widget):
         txs = self.visible_block.transactions
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
+        total_block_count = len(Ledger.get_instance().get_all_blocks()) - 1 # Do not count genesis block
+
         children = []
 
         children.append(
-            Label(f"Block nr: {self.visible_block.number}", classes="block__title") if self.visible_block.number > 0 else Label(
+            Label(f"Block nr: {self.visible_block.number} / {total_block_count}", classes="block__title") if self.visible_block.number > 0 else Label(
                 f"Genesis Block", classes="block__title block__title--genesis"),
         )
 
@@ -122,6 +124,10 @@ class BlockInfoWidget(Widget):
                 ),
                 classes="button_row"
             )
+        )
+
+        children.append(
+            Label(f"Transactions ({len(txs)}):", classes="block__title")
         )
 
         children.append(
