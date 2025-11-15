@@ -1,8 +1,14 @@
 import os
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from exceptions import RequestedDirectoryDoesNotExistException, RequestedFileDoesNotExistException
 from models.constants import FilesAndDirectories
+
+import hashlib
+import json
+import tempfile
+import time
+from datetime import datetime
 
 
 class FileSystemService:
@@ -93,7 +99,147 @@ class FileSystemService:
             with open(file_path, "w", encoding="utf-8") as f:
                 pass
         except Exception as e:
-            raise IOError(f"Failed to create file: {file_path}") from e
+            # use a safe fallback if file_path is somehow not set
+            fp = locals().get('file_path', '<unknown>')
+            raise IOError(f"Failed to create file: {fp}") from e
+
+    # ---- File hashing / hash-store methods (SHA-256 only; no env vars) ----
+
+    HASH_STORE_FILE_NAME = "file_hashes.json"
+    DEFAULT_HASH_ALGORITHM = "sha256"
+
+    def _format_iso_time(self, ts: float) -> str:
+        return datetime.fromtimestamp(ts).isoformat()
+
+    def get_hash_store_path(self) -> str:
+        """Return absolute path to data/file_hashes.json (creates data directory if needed)."""
+        data_root = self.get_data_root(create_if_missing=True)
+        return os.path.join(data_root, self.HASH_STORE_FILE_NAME)
+
+    def compute_file_hash(self, file_path: str) -> str:
+        """Compute and return the SHA-256 hex digest of the file at file_path."""
+        chunk_size = 8192
+        hasher = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+        return hasher.hexdigest()
+
+    def load_hash_store(self) -> Dict[str, Any]:
+        """Load the JSON hash store; return {} if missing or invalid."""
+        path = self.get_hash_store_path()
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def save_hash_store(self, store: Dict[str, Any]) -> None:
+        """Atomically save the provided store dict to the hash-store JSON file."""
+        path = self.get_hash_store_path()
+        dirpath = os.path.dirname(path)
+        os.makedirs(dirpath, exist_ok=True)
+
+        fd, tmp_path = tempfile.mkstemp(dir=dirpath, prefix=".tmp_hashstore_", suffix=".json")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tf:
+                json.dump(store, tf, indent=2, sort_keys=True)
+                tf.flush()
+                os.fsync(tf.fileno())
+            os.replace(tmp_path, path)
+        except Exception:
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+            raise
+
+    def update_hash_for_file(self, data_filename: str) -> Dict[str, Any]:
+        """Compute the current hash for the given data file and persist it into the hash store.
+
+        Returns the entry that was stored.
+        """
+        file_path = self.get_data_file_path(data_filename, create_if_missing=False)
+        self.validate_file_exists(file_path, throw_exception=True)
+
+        actual_hash = self.compute_file_hash(file_path)
+        size = os.path.getsize(file_path)
+        mtime = os.path.getmtime(file_path)
+
+        entry = {
+            "algorithm": self.DEFAULT_HASH_ALGORITHM,
+            "hash": actual_hash,
+            "size": size,
+            "mtime": self._format_iso_time(mtime),
+            "updated_at": self._format_iso_time(time.time()),
+        }
+
+        store = self.load_hash_store()
+        store[data_filename] = entry
+        self.save_hash_store(store)
+        return entry
+
+    def verify_file_hash(self, data_filename: str) -> Dict[str, Any]:
+        """Verify a single data file against the stored hash.
+
+        Returns a result dict with keys: 'ok' (bool), 'expected', 'actual', 'reason' (optional).
+        """
+        store = self.load_hash_store()
+        if data_filename not in store:
+            return {"ok": False, "reason": "no_stored_hash"}
+
+        expected_entry = store[data_filename]
+        expected_hash = expected_entry.get("hash")
+        file_path = self.get_data_file_path(data_filename, create_if_missing=False)
+        if not os.path.exists(file_path):
+            return {"ok": False, "reason": "file_missing"}
+
+        actual_hash = self.compute_file_hash(file_path)
+
+        ok = (actual_hash == expected_hash)
+        result = {
+            "ok": ok,
+            "expected": expected_hash,
+            "actual": actual_hash,
+            "entry": expected_entry,
+        }
+        if not ok:
+            result["reason"] = "mismatch"
+        return result
+
+    def verify_all_data_files(self) -> Dict[str, Dict[str, Any]]:
+        """Verify all canonical data files (ledger, pool, users db). Returns mapping filename -> result dict."""
+        targets = [
+            FilesAndDirectories.LEDGER_FILE_NAME,
+            FilesAndDirectories.POOL_FILE_NAME,
+            FilesAndDirectories.USERS_DB_FILE_NAME,
+        ]
+        results: Dict[str, Dict[str, Any]] = {}
+        for fn in targets:
+            try:
+                results[fn] = self.verify_file_hash(fn)
+            except RequestedFileDoesNotExistException:
+                results[fn] = {"ok": False, "reason": "file_missing"}
+        return results
+
+    def initialize_hash_store(self) -> None:
+        """Initialize the hash store by computing and storing hashes for all canonical data files."""
+        targets = [
+            FilesAndDirectories.LEDGER_FILE_NAME,
+            FilesAndDirectories.POOL_FILE_NAME,
+            FilesAndDirectories.USERS_DB_FILE_NAME,
+        ]
+        for fn in targets:
+            try:
+                self.update_hash_for_file(fn)
+            except RequestedFileDoesNotExistException:
+                pass  # skip missing files
 
     @classmethod
     def get_temp_data_root(cls, create_if_missing: bool = False) -> str:
