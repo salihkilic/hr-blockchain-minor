@@ -26,38 +26,42 @@ class TransactionPoolWidget(Widget):
                 width: 100%;
                 margin: 0 0 1 0;
             }
+            .alert--warning {
+                background: darkorange;
+                padding: 1 1;
+                margin: 0 0 1 0;
+                text-align: center;
+            }
         """
 
     transactions: list[Transaction] = reactive(lambda: Pool.get_instance().get_transaction_without_marked_for_block(), recompose=True)
-    show_add_required: bool = reactive(False, recompose=True)
 
     def __init__(self):
         super().__init__()
 
     def on_mount(self) -> None:
-        Pool.subscribe(self.update_transactions)
-        UserService.subscribe(self.update_show_add_required)
+        Pool.subscribe(self.update_state)
+        UserService.subscribe(self.update_state)
 
 
-    def update_transactions(self, param):
+    def update_state(self, param):
         log("Transaction pool updated, refreshing transactions...")
         self.transactions = Pool.get_instance().get_transaction_without_marked_for_block()
         self.mutate_reactive(TransactionPoolWidget.transactions)
 
-    def update_show_add_required(self, user):
-        log("User state changed, updating show_add_required...")
-        self.show_add_required = user is not None
-
-
 
     def compose(self) -> ComposeResult:
-
         children = []
 
-        if self.show_add_required:
-            children.append(
-                Button("Add required transactions to block", classes="button button--add", id="add_required_txs")
-            )
+        if UserService.logged_in_user is not None:
+            if Pool.get_instance().get_required_transactions() is not None:
+                children.append(
+                    Button("Add required transactions to block", classes="button button--add", id="add_required_txs")
+                )
+            else:
+                children.append(
+                    Static("Not enough transactions for block", classes="alert alert--warning")
+                )
 
         children.append(
             VerticalScroll(
@@ -69,3 +73,12 @@ class TransactionPoolWidget(Widget):
         yield Vertical(
             *children
         )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        button_id = event.button.id
+
+        if button_id == "add_required_txs":
+            required_txs = Pool.get_instance().get_required_transactions()
+            if required_txs is not None:
+                for tx in required_txs:
+                    Pool.get_instance().mark_transaction_for_block(tx)

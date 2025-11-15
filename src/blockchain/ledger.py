@@ -1,5 +1,7 @@
 from typing import Optional
 
+from textual import log
+
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from models import Block
 from models.block import BlockStatus, ValidationFlag
@@ -7,7 +9,6 @@ from exceptions.mining import InvalidBlockException
 
 
 class Ledger(AbstractPickableSingleton):
-
     # Hash - Block pairs
     _blocks: dict[str, "Block"]
     _latest_block: Optional[Block]
@@ -31,14 +32,21 @@ class Ledger(AbstractPickableSingleton):
     # -----------------
     # Basic getters
     # -----------------
-    def get_latest_block(self) -> Optional[Block]:
+    def get_latest_block(self, include_pending: bool = False) -> Optional[Block]:
+        if include_pending and self.has_pending_blocks():
+            return self.get_pending_block()
         return self._latest_block
 
     def get_block(self, hash: str) -> Optional[Block]:
         return self._blocks.get(hash, None)
 
-    def get_block_by_number(self, number: int) -> Optional[Block]:
-        for block in self._blocks.values():
+    def get_block_by_number(self, number: int, include_pending: bool = False) -> Optional[Block]:
+        blocks = self._blocks.values()
+
+        if include_pending:
+            blocks = list(blocks) + list(self._pending_blocks.values())
+
+        for block in blocks:
             if block.number == number:
                 return block
         return None
@@ -153,10 +161,14 @@ class Ledger(AbstractPickableSingleton):
         self._pending_blocks[block.calculated_hash] = block
         self._save()
 
-    def get_pending_block(self, block_hash: str) -> Optional[Block]:
-        return self._pending_blocks.get(block_hash)
+    def get_pending_block(self) -> Optional[Block]:
+        if not self.has_pending_blocks():
+            return None
 
-    def add_validation_flag(self, block_hash: str, validator_address: str, valid: bool, reason: Optional[str] = None) -> dict:
+        return next(iter(self._pending_blocks.values()))
+
+    def add_validation_flag(self, block_hash: str, validator_address: str, valid: bool,
+                            reason: Optional[str] = None) -> dict:
         block = self._pending_blocks.get(block_hash)
         if block is None:
             raise InvalidBlockException("Pending block not found.")
@@ -226,6 +238,29 @@ class Ledger(AbstractPickableSingleton):
         self._save()
         from blockchain import Pool
         Pool.get_instance().remove_transactions(block.transactions)
+
+    @classmethod
+    def mine_new_block(cls):
+        """ Mines a new block using the currently logged-in user as miner and the transactions marked for inclusion in the pool.
+            Automatically adds the block for pending and clear te necessary pool transactions.
+        """
+        from blockchain import Pool
+        from services.user_service import UserService
+
+        marked_transactions = Pool.get_instance().get_transactions_marked_for_block()
+        logged_in_user = UserService.logged_in_user
+
+        if logged_in_user is None:
+            raise InvalidBlockException("No logged-in user to mine the block.")
+
+        log("Mining new block...")
+
+        block = Block.mine_with_transactions(logged_in_user, marked_transactions)
+
+        log("Block mined with nonce %d and hash %s" % (block.nonce, block.calculated_hash))
+
+        Ledger.get_instance().submit_block(block)
+        Pool.get_instance().remove_marked_transaction_from_pool()
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

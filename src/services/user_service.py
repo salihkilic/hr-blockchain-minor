@@ -29,6 +29,8 @@ class UserService(Subscribable):
         self._call_subscribers(user)
 
     def logout(self) -> None:
+        from blockchain import Pool
+        Pool.get_instance().unmark_all_transaction()
         self.__class__.logged_in_user = None
         self.__class__._call_subscribers(None)
 

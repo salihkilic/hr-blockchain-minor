@@ -68,7 +68,7 @@ class Pool(AbstractPickableSingleton, Subscribable):
         # Only consider normal transfer transactions for fairness selection
         all_transactions = [
             tx for tx in self.get_instance()._transactions
-            if tx.kind == TransactionType.TRANSFER and tx.validate(raise_exception=False)
+            if tx.kind != TransactionType.MINING_REWARD and tx.validate(raise_exception=False)
         ]
 
         if max_timestamp is not None:
@@ -98,17 +98,23 @@ class Pool(AbstractPickableSingleton, Subscribable):
         """
         required_transactions = self.get_required_transactions(max_timestamp=block.timestamp)
         if required_transactions is None:
-            raise Exception("Not enough transactions in pool to validate fairness.")
+            raise InvalidBlockException("Not enough transactions in pool to validate fairness.")
 
         for req_tx in required_transactions:
             if req_tx not in block.transactions:
                 raise InvalidBlockException("Not all required transactions are included in the block for fairness.")
 
-        non_miner_txs = [tx for tx in block.transactions if tx.sender_address != block.miner_address]
+        non_miner_txs = [tx for tx in block.transactions if tx.sender_address != block.miner_address or tx.kind != TransactionType.TRANSFER]
         if len(non_miner_txs) == 0:
             pool_non_miner_txs = [tx for tx in self.get_instance()._transactions if tx.sender_address != block.miner_address]
             if len(pool_non_miner_txs) > 0:
                 raise InvalidBlockException("Block must include at least one transaction not created by the miner.")
+
+    def remove_marked_transaction_from_pool(self):
+        """ Removed the transactions marked for block from the pool and unmark them. """
+        marked_txs = self.get_instance()._transactions_marked_for_block
+        self.remove_transactions(marked_txs)
+        self.unmark_all_transaction()
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

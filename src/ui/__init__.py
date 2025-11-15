@@ -1,0 +1,1 @@
+from .goodchain_app import GoodchainApp

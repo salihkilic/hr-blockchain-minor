@@ -66,6 +66,10 @@ class Transaction(AbstractHashableModel):
     def hash(self) -> str:
         return self._hash
 
+    @property
+    def timestamp_datetime(self) -> datetime:
+        return datetime.fromisoformat(self.timestamp)
+
     @classmethod
     def create_by_receiver_username(
             cls,
