@@ -32,6 +32,7 @@ class Transaction(AbstractHashableModel):
 
     # Metadata
     timestamp: str
+    is_invalid: bool = False
 
     def __init__(
             self,
@@ -55,6 +56,7 @@ class Transaction(AbstractHashableModel):
         self.sender_public_key = sender_public_key
         self.sender_signature = sender_signature
         self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.is_invalid = False
 
         # Important that other fields are set before id generation
         self._hash = self.cryptography_service.sha256_hash(self.canonicalize())
@@ -158,11 +160,11 @@ class Transaction(AbstractHashableModel):
             raise ValueError("Sender signature is not set.")
         return f"{self.canonicalize()}|{self.sender_signature}|{self.hash}"
 
-    def validate(self, raise_exception: bool = True) -> bool:
+    def validate(self, raise_exception: bool = True, include_reserved_balance: bool = False) -> bool:
         """ Validates the transaction content and signature. Raises exception if invalid. """
         match self.kind:
             case TransactionType.TRANSFER:
-                return self._validate_transfer()
+                return self._validate_transfer(raise_exception, include_reserved_balance)
             case TransactionType.MINING_REWARD:
                 return self._validate_mining_reward()
             case TransactionType.SIGNUP_REWARD:
@@ -170,7 +172,7 @@ class Transaction(AbstractHashableModel):
             case _:
                 raise ValueError(f"Unknown transaction type: {self.kind}")
 
-    def _validate_transfer(self, raise_exception: bool = True) -> bool:
+    def _validate_transfer(self, raise_exception: bool = True, include_reserved_balance: bool = False) -> bool:
         # TODO Mark transaction as invalid when necessary
 
         sender_wallet = Wallet.from_address(self.sender_address) if self.sender_address else None
@@ -182,7 +184,10 @@ class Transaction(AbstractHashableModel):
 
         required_balance = self.amount + self.fee
         # Reserved balance is a negative number, so we add it to get the total available balance
-        sender_balance = sender_wallet.balance + sender_wallet.reserved_balance
+        if include_reserved_balance:
+            sender_balance = sender_wallet.balance + sender_wallet.reserved_balance
+        else:
+            sender_balance = sender_wallet.balance
 
         if sender_balance < required_balance:
             if raise_exception:

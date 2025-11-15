@@ -1,4 +1,4 @@
-from textual import log
+from textual import log, events
 from textual.app import RenderResult, ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll, Container
 from textual.reactive import reactive
@@ -63,6 +63,11 @@ class BlockInfoWidget(Widget):
             if latest_block is not None:
                 self.visible_block_number = latest_block.number
 
+    def on_mount(self) -> None:
+        Ledger.subscribe(self.update_state)
+
+    def update_state(self, param):
+        log("Ledger state changed, recomposing BlockInfoWidget")
 
     def compose(self) -> ComposeResult:
         log(f"Composing BlockInfoWidget for block number: {self.visible_block_number}")

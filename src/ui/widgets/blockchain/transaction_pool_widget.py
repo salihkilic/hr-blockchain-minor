@@ -27,7 +27,7 @@ class TransactionPoolWidget(Widget):
                 margin: 0 0 1 0;
             }
             .alert--warning {
-                background: darkorange;
+                background: orange 10%;
                 padding: 1 1;
                 margin: 0 0 1 0;
                 text-align: center;

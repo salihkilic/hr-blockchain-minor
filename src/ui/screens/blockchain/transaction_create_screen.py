@@ -126,7 +126,7 @@ class TransactionCreateScreen(Screen):
                 amount=self.amount,
                 fee=self.fee,
             )
-            transaction.validate(raise_exception=True)
+            transaction.validate(raise_exception=True, include_reserved_balance=True)
         except InvalidTransactionException as e:
             self.tx_errors.append(str(e))
             return

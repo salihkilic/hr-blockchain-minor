@@ -116,14 +116,15 @@ class BlockValidationScreen(Screen):
                 Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
                                                           result.valid)
         except (InvalidBlockException, InvalidTransactionException) as e:
+            from ui.screens.startup import TransactionRemovalScreen
             self.app.call_from_thread(
                 self.app.switch_screen,
                 AlertScreen(UIAlert(
                     title="Block validation failed",
-                    message=f"The ledger validation failed due to error:\n{e}",
+                    message=f"The block validation failed due to error:\n{e}",
                     alert_type=AlertType.WARNING,
                     dismissed_automatically=False
-                ), terminate_after_dismiss=True)
+                ), callback=lambda: self.app.switch_screen(TransactionRemovalScreen()))
             )
             return
 
