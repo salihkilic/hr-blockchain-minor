@@ -311,6 +311,12 @@ class Block:
         all_reasons = struct_reasons + tx_reasons
         return BlockValidationResult(valid=struct_ok and tx_ok, reasons=all_reasons, invalid_transactions=invalid_txs)
 
+    def validation_valid_len(self):
+        return len([vf for vf in self.validators if vf.valid])
+
+    def validation_invalid_len(self):
+        return len([vf for vf in self.validators if not vf.valid])
+
     # -----------------
     # (De)serialization helpers
     # -----------------
@@ -341,3 +347,4 @@ class Block:
         if isinstance(self.status, BlockStatus):
             data['status'] = self.status.value
         return data
+

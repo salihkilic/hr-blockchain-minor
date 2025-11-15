@@ -32,6 +32,9 @@ class TransactionListingWidget(Widget):
         .transaction--reward {
             background: green 10%;
         }
+        .transaction--invalid {
+            background: red 80%;
+        }
         .button_row {
             margin: 1 0;
         }
@@ -39,6 +42,7 @@ class TransactionListingWidget(Widget):
 
     is_marked_for_block = reactive(False, recompose=True)
     can_be_moved = reactive(False, recompose=True)
+    can_be_removed = reactive(False, recompose=True)
 
     def __init__(self, transaction: Transaction, show_move_buttons: bool = True):
         super().__init__()
@@ -56,8 +60,22 @@ class TransactionListingWidget(Widget):
     def compose(self) -> ComposeResult:
         classes = ""
 
+        can_be_canceled = True
+
+        logged_in_user = UserService.logged_in_user
+
+        if logged_in_user is not None:
+            if self.transaction.sender_address != logged_in_user.address:
+                can_be_canceled = False
+
+        if self.transaction not in Pool.get_instance().get_transactions() or self.transaction in Pool.get_instance().get_transactions_marked_for_block():
+            can_be_canceled = False
+
         if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD:
             classes = "transaction--reward"
+
+        if self.transaction.is_invalid:
+            classes = "transaction--invalid"
 
         move_buttons = []
 
@@ -70,6 +88,14 @@ class TransactionListingWidget(Widget):
                 ),
             ]
 
+        other_buttons = [
+            Horizontal(
+                Button("Show details", classes="button", id="show_tx_details"),
+                Button("Cancel transaction", classes="button", id="cancel_tx", disabled=not can_be_canceled),
+                classes="button_col"
+            ),
+        ]
+
         yield Collapsible(
             Label(f"Type: {self.transaction.kind.value.upper()}"),
             Label(f"Sender: {self.transaction.sender_address}"),
@@ -79,10 +105,7 @@ class TransactionListingWidget(Widget):
             Label(f"Created at: {self.transaction.timestamp_datetime.strftime("%d-%m-%Y %H:%M:%S")}"),
             Vertical(
                 *move_buttons,
-                Horizontal(
-                    Button("Show details", classes="button", id="show_tx_details"),
-                    classes="button_col"
-                ),
+                *other_buttons,
                 classes="button_row"
             ),
             title=f"TX {self.transaction.hash}",
@@ -99,4 +122,7 @@ class TransactionListingWidget(Widget):
         if event.button.id == "move_to_block":
             from blockchain import Pool
             Pool.get_instance().mark_transaction_for_block(self.transaction)
+        if event.button.id == "cancel_tx":
+            from blockchain import Pool
+            Pool.get_instance().remove_transaction(self.transaction)
 
