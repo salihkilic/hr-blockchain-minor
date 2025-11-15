@@ -60,6 +60,17 @@ class TransactionListingWidget(Widget):
     def compose(self) -> ComposeResult:
         classes = ""
 
+        can_be_canceled = True
+
+        logged_in_user = UserService.logged_in_user
+
+        if logged_in_user is not None:
+            if self.transaction.sender_address != logged_in_user.address:
+                can_be_canceled = False
+
+        if self.transaction not in Pool.get_instance().get_transactions() or self.transaction in Pool.get_instance().get_transactions_marked_for_block():
+            can_be_canceled = False
+
         if self.transaction.kind == TransactionType.MINING_REWARD or self.transaction.kind == TransactionType.SIGNUP_REWARD:
             classes = "transaction--reward"
 
@@ -80,6 +91,7 @@ class TransactionListingWidget(Widget):
         other_buttons = [
             Horizontal(
                 Button("Show details", classes="button", id="show_tx_details"),
+                Button("Cancel transaction", classes="button", id="cancel_tx", disabled=not can_be_canceled),
                 classes="button_col"
             ),
         ]
@@ -110,4 +122,7 @@ class TransactionListingWidget(Widget):
         if event.button.id == "move_to_block":
             from blockchain import Pool
             Pool.get_instance().mark_transaction_for_block(self.transaction)
+        if event.button.id == "cancel_tx":
+            from blockchain import Pool
+            Pool.get_instance().remove_transaction(self.transaction)
 
