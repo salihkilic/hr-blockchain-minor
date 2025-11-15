@@ -99,7 +99,6 @@ class BlockValidationScreen(Screen):
             validator = UserService.logged_in_user
 
             if pending_block is not None:
-                time.sleep(1)
                 result = pending_block.validate(current_block)
 
                 if not result:

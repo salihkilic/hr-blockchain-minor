@@ -76,6 +76,8 @@ class TransactionRemovalScreen(Screen):
 
 
     def show_no_invalid_transactions(self):
+        from events import LoginValidationCompletedEvent
+        LoginValidationCompletedEvent.dispatch()
         self.app.switch_screen(AlertScreen(UIAlert(
             title="No invalid transactions found",
             message="No invalid transactions were found in the transaction pool sent by you.",
@@ -84,7 +86,8 @@ class TransactionRemovalScreen(Screen):
 
     def show_invalid_transaction_removed(self, invalid_transactions: list[Transaction]):
         tx_list = "\n".join([f"- {tx.hash}" for tx in invalid_transactions])
-
+        from events import LoginValidationCompletedEvent
+        LoginValidationCompletedEvent.dispatch()
         self.app.switch_screen(AlertScreen(UIAlert(
             title="Automatically removed invalid transactions",
             message=f"The following transactions were found to be invalid and have been removed from your transaction pool:\n{tx_list}",

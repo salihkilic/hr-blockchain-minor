@@ -269,8 +269,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
 
     @classmethod
     def _save(cls) -> None:
-        cls._call_subscribers(None)
         super()._save()
+        cls._call_subscribers(None)
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

@@ -66,7 +66,15 @@ class Wallet:
         """
         balance = Decimal("0.0")
 
-        from blockchain import Pool
+        from blockchain import Ledger, Pool
+        ledger = Ledger.get_instance()
+        pending_block = ledger.get_pending_block()
+        if pending_block is not None:
+            for transaction in pending_block.transactions:
+                if transaction.sender_address == self.address:
+                    balance -= (transaction.amount + transaction.fee)
+
+
         pool = Pool.get_instance()
         for transaction in pool.get_transactions():
             if transaction.sender_address == self.address:
@@ -84,11 +92,18 @@ class Wallet:
     @property
     def unconfirmed_balance(self) -> Decimal:
         """
-        Get the unconfirmed balance of this wallet from the transactions in the pool.
+        Get the unconfirmed balance of this wallet from the transactions in the pool and unconfirmed blocks.
         """
         balance = Decimal("0.0")
 
-        from blockchain import Pool
+        from blockchain import Ledger, Pool
+        ledger = Ledger.get_instance()
+        pending_block = ledger.get_pending_block()
+        if pending_block is not None:
+            for transaction in pending_block.transactions:
+                if transaction.receiver_address == self.address:
+                    balance += transaction.amount
+
         pool = Pool.get_instance()
         for transaction in pool.get_transactions():
             if transaction.receiver_address == self.address:

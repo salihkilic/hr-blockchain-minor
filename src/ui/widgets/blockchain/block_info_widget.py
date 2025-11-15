@@ -6,7 +6,7 @@ from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
 from blockchain import Ledger
-from models.block import BlockStatus
+from models.block import BlockStatus, Block
 from .transaction_listing_widget import TransactionListingWidget
 
 
@@ -50,68 +50,67 @@ class BlockInfoWidget(Widget):
             }
         """
 
-    visible_block_number: int = reactive(0, recompose=True)
+    visible_block: Block = reactive(None, recompose=True)
 
     def __init__(self, ):
         super().__init__()
+        self.update_state(None)
+
+    def on_mount(self) -> None:
+        from events import LoginValidationCompletedEvent
+        LoginValidationCompletedEvent.subscribe(self.update_state)
+
+    def update_state(self, param):
+        log("Updating BlockInfoWidget state...")
         pending_block = Ledger.get_instance().get_pending_block()
-        log(f"Initializing BlockInfoWidget, pending block: {pending_block}")
         if pending_block is not None:
-            self.visible_block_number = pending_block.number
+            self.set_reactive(BlockInfoWidget.visible_block, pending_block)
         else:
             latest_block = Ledger.get_instance().get_latest_block()
             if latest_block is not None:
-                self.visible_block_number = latest_block.number
-
-    def on_mount(self) -> None:
-        Ledger.subscribe(self.update_state)
-
-    def update_state(self, param):
-        log("Ledger state changed, recomposing BlockInfoWidget")
+                self.set_reactive(BlockInfoWidget.visible_block, latest_block)
+        self.app.call_later(self.recompose)
 
     def compose(self) -> ComposeResult:
-        log(f"Composing BlockInfoWidget for block number: {self.visible_block_number}")
-        visible_block = Ledger.get_instance().get_block_by_number(number=self.visible_block_number, include_pending=True)
-
-        if visible_block is None:
+        if self.visible_block is None:
             yield Vertical(
                 Label("No blocks in the ledger.", classes="block__title"),
             )
             return
 
-        is_last_block = visible_block == Ledger.get_instance().get_latest_block(include_pending=True)
-        is_first_block = visible_block is not None and visible_block.number == 0
+        is_last_block = self.visible_block == Ledger.get_instance().get_latest_block(include_pending=True)
+        is_first_block = self.visible_block is not None and self.visible_block.number == 0
 
-        txs = visible_block.transactions
+        txs = self.visible_block.transactions
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         children = []
 
         children.append(
-            Label(f"Block nr: {visible_block.number}", classes="block__title") if visible_block.number > 0 else Label(
+            Label(f"Block nr: {self.visible_block.number}", classes="block__title") if self.visible_block.number > 0 else Label(
                 f"Genesis Block", classes="block__title block__title--genesis"),
         )
 
-        if visible_block.status == BlockStatus.PENDING:
+        if self.visible_block.status == BlockStatus.PENDING:
             children.append(
                 Label("This block is pending validation.", classes="block__status block__status--pending")
             ),
-            valids = visible_block.validation_valid_len()
-            invalids = visible_block.validation_invalid_len()
+            valids = self.visible_block.validation_valid_len()
+            invalids = self.visible_block.validation_invalid_len()
             children.append(
                 Label(f"Validations: {valids} valid, {invalids} invalid.", classes="block__status block__status--pending")
             )
 
-        if visible_block.number > 0 and visible_block.status != BlockStatus.PENDING:
+        if self.visible_block.number > 0 and self.visible_block.status != BlockStatus.PENDING:
             classes = "block__status"
-            if visible_block.status == BlockStatus.ACCEPTED:
+            if self.visible_block.status == BlockStatus.ACCEPTED:
                 classes += " block__status--accepted"
-            if visible_block.status == BlockStatus.REJECTED:
+            if self.visible_block.status == BlockStatus.REJECTED:
                 classes += " block__status--rejected"
-            if visible_block.status == BlockStatus.PENDING:
+            if self.visible_block.status == BlockStatus.PENDING:
                 classes += " block__status--pending"
             children.append(
-                Label(f"Block status: {visible_block.status.value.capitalize()}", classes=classes)
+                Label(f"Block status: {self.visible_block.status.value.capitalize()}", classes=classes)
             )
 
         children.append(
@@ -138,14 +137,14 @@ class BlockInfoWidget(Widget):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "prev_block":
-            log(f"Current visible block number: {self.visible_block_number}, trying to go to previous block")
-            if self.visible_block_number > 0:
-                log(f"Going to previous block number: {self.visible_block_number - 1}")
-                self.visible_block_number -= 1
+            log(f"Current visible block number: {self.visible_block.number}, trying to go to previous block")
+            if self.visible_block.number > 0:
+                log(f"Going to previous block number: {self.visible_block.number - 1}")
+                self.visible_block = Ledger.get_instance().get_block_by_number(self.visible_block.number - 1)
                 self.recompose()
             else:
                 log(f"Already at the first block, cannot go back further.")
         if event.button.id == "next_block":
             latest_block = Ledger.get_instance().get_latest_block(include_pending=True)
-            if latest_block and self.visible_block_number < latest_block.number:
-                self.visible_block_number += 1
+            if latest_block and self.visible_block.number < latest_block.number:
+                self.visible_block = Ledger.get_instance().get_block_by_number(self.visible_block.number + 1, include_pending=True)

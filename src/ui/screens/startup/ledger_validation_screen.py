@@ -60,7 +60,6 @@ class LedgerValidationScreen(Screen):
     def _validate_ledger(self):
         from blockchain import Ledger
         try:
-            time.sleep(1)  # Small delay to ensure loading indicator is visible
             (valid, errors) = Ledger.get_instance().validate_chain()
         except InvalidTransactionException as e:
             valid = False
