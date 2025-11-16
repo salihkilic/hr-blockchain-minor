@@ -8,7 +8,7 @@ from enum import Enum
 from textual import log
 
 from exceptions.mining import InvalidBlockException
-from exceptions.transaction import InvalidTransactionException
+from exceptions.transaction import InvalidTransactionException, InsufficientBalanceException
 from .user import User
 from .transaction import Transaction
 
@@ -135,7 +135,9 @@ class Block:
         for tx in transactions:
             try:
                 tx.validate()
-            except InvalidTransactionException as e:
+            except (InvalidTransactionException, InsufficientBalanceException) as e:
+                from blockchain import Pool
+                Pool.get_instance().mark_transaction_as_invalid(tx)
                 raise InvalidBlockException(f"Invalid transaction in block: {e}")
 
         if not (5 <= len(transactions) <= 10):

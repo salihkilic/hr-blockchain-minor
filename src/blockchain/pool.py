@@ -124,6 +124,13 @@ class Pool(AbstractPickableSingleton, Subscribable):
                 invalid_txs.append(tx)
         return invalid_txs
 
+    def mark_transaction_as_invalid(self, transaction: Transaction) -> None:
+        """ Mark a transaction in the pool as invalid. """
+        for tx in self.get_instance()._transactions:
+            if tx == transaction:
+                tx.is_invalid = True
+        self._save()
+
     def cancel_transaction(self, transaction: Transaction) -> None:
         """ Cancel a transaction in the pool. """
         self.remove_transaction(transaction)

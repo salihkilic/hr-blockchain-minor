@@ -40,13 +40,13 @@ class LedgerValidationScreen(Screen):
         }
     """
 
-    def __init__(self):
+    def __init__(self, close_after: bool = False):
         super().__init__()
-        self.timer = None
+        self.close_after = close_after
 
     def compose(self) -> ComposeResult:
         yield Vertical(
-            Label("Validating ledger", classes="title"),
+            Label("Validating chain", classes="title"),
             Container(
                 LoadingIndicator(),
             )
@@ -72,8 +72,8 @@ class LedgerValidationScreen(Screen):
             self.app.call_from_thread(
                 self.app.switch_screen,
                 AlertScreen(UIAlert(
-                    title="Ledger validation failed",
-                    message=f"The ledger validation failed due to {'an' if len(errors) == 1 else ''} error{'s' if len(errors) > 1 else ''}:\n{'\n'.join(errors)}",
+                    title="Chain validation failed",
+                    message=f"The chain validation failed due to {'an' if len(errors) == 1 else ''} error{'s' if len(errors) > 1 else ''}:\n{'\n'.join(errors)}",
                     alert_type=AlertType.DANGER,
                     dismissed_automatically=False
                 ), terminate_after_dismiss=True)
@@ -85,7 +85,7 @@ class LedgerValidationScreen(Screen):
     def show_ledger_valid(self):
         from ui.screens.startup import BlockValidationScreen
         self.app.switch_screen(AlertScreen(UIAlert(
-            title="Ledger validation successful",
-            message="The ledger has been successfully validated.",
+            title="Chain validation successful",
+            message="The chain has been successfully validated.",
             alert_type=AlertType.SUCCESS
-        ), callback=lambda: self.app.switch_screen(BlockValidationScreen())))
+        ), callback=lambda: self.app.switch_screen(BlockValidationScreen()) if not self.close_after else self.app.pop_screen()))

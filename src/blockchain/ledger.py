@@ -221,10 +221,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
 
             if not tx.validate(raise_exception=False):
                 # Mark as invalid (attribute added later if needed)
-                if not hasattr(tx, 'is_invalid'):
-                    setattr(tx, 'is_invalid', True)
-                else:
-                    tx.is_invalid = True
+                Pool.get_instance().mark_transaction_as_invalid(tx)
             pool.add_transaction(tx, raise_exception=False)
         # Remove from pending (not added to chain)
         self._pending_blocks.pop(block.calculated_hash, None)

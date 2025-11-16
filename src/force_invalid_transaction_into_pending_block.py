@@ -5,23 +5,13 @@ from blockchain import Ledger, Pool
 from exceptions.user import DuplicateUsernameException
 from models import User, Transaction, Block
 from models.block import BlockStatus
+from models.constants import FilesAndDirectories
 from models.enum import TransactionType
 from repositories.user import UserRepository
 from services import InitializationService, FileSystemService
 
 
 def force_invalid_transaction_into_pending_block():
-    block = Ledger.get_instance().get_pending_block()
-
-    Ledger.get_instance().validate_chain()
-
-    if block is None:
-        print("No pending block found.")
-        return
-
-    # Clear all validations
-    block.status = BlockStatus.PENDING
-    block.validations = []
 
     user_repo = UserRepository()
     sender = user_repo.find_by_username('tom')
@@ -33,9 +23,12 @@ def force_invalid_transaction_into_pending_block():
 
     invalid_transaction.amount = Decimal(1_000_000_000)  # Invalid amount, assuming this exceeds balance
 
-    block.transactions.append(invalid_transaction)
+    Pool.get_instance().add_transaction(invalid_transaction,raise_exception=False)
 
-    Ledger.force_save()
+    Pool.force_save()
+
+    fs_service = FileSystemService()
+    fs_service.update_hash_for_file(FilesAndDirectories.POOL_FILE_NAME)
 
 
 if __name__ == "__main__":

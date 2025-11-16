@@ -43,6 +43,9 @@ class UserInfoWidget(Widget):
             .col__label--warning {
                 color: orange;
             }
+            .button--full-width {
+                width: 100%;
+            }
         """
 
     logged_in_user: User | None = reactive(None, recompose=True)
@@ -101,6 +104,10 @@ class UserInfoWidget(Widget):
                         Button("Login or register", id="login", classes="button"),
                         classes="col"
                     ),
+                    Horizontal(
+                        Button("Validate chain", classes="button button--full-width", id="validate_chain"),
+                        classes="col"
+                    ),
                     classes="row"
                 ),
             )
@@ -142,6 +149,10 @@ class UserInfoWidget(Widget):
                     Button("Create transaction", classes="button", id="create_transaction"),
                     classes="col"
                 ),
+                Horizontal(
+                    Button("Validate chain", classes="button button--full-width", id="validate_chain"),
+                    classes="col"
+                ),
                 classes="row"
             ),
             Label(f"Transactions ({len(txs)}):", classes="block__title"),
@@ -176,3 +187,6 @@ class UserInfoWidget(Widget):
                     dismissed_automatically=False,
                     alert_type=AlertType.DANGER
                 )))
+        if event.button.id == "validate_chain":
+            from ui.screens.startup import LedgerValidationScreen
+            self.app.push_screen(LedgerValidationScreen(close_after=True))

@@ -14,7 +14,7 @@ class DifficultyConfig:
     max_difficulty: int = 32
     window_size: int = 5         # number of recent samples to average
     step_limit: int = 1          # Max step change per update (usually 1)
-    default_difficulty: int = 2  # Starting difficulty aligned with tests
+    default_difficulty: int = 5  # Starting difficulty aligned with tests
 
 
 @dataclass
