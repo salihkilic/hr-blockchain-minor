@@ -63,9 +63,12 @@ class TransactionPoolWidget(Widget):
                     Static("Not enough transactions for block", classes="alert alert--warning")
                 )
 
+        txs = self.transactions
+        txs.sort(key=lambda tx: tx.timestamp)
+
         children.append(
             VerticalScroll(
-                *list(map(lambda tx: TransactionListingWidget(tx), self.transactions)),
+                *list(map(lambda tx: TransactionListingWidget(tx), txs)),
                 classes="transactions_scroll"
             )
         )

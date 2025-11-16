@@ -285,3 +285,12 @@ class Ledger(AbstractPickableSingleton, Subscribable):
     @property
     def block_count(self):
         return len(self._blocks)
+
+    def get_transactions_for_address(self, address: str) -> list["Transaction"]:
+        """ Get all transactions in the ledger involving the given address."""
+        transactions = []
+        for block in self._blocks.values():
+            for tx in block.transactions:
+                if tx.sender_address == address or tx.receiver_address == address:
+                    transactions.append(tx)
+        return transactions

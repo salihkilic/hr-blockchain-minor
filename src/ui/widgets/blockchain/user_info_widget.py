@@ -8,8 +8,8 @@ from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
-from blockchain import Pool
-from models import User, Wallet
+from blockchain import Pool, Ledger
+from models import User, Wallet, Transaction
 from models.dto import UIAlert
 from models.enum import AlertType
 from services.user_service import UserService
@@ -49,6 +49,7 @@ class UserInfoWidget(Widget):
     balance: Decimal = reactive(Decimal("0.00"), recompose=True)
     reserved_balance: Decimal = reactive(Decimal("0.00"), recompose=True)
     unconfirmed_balance: Decimal = reactive(Decimal("0.00"), recompose=True)
+    own_transactions: list[Transaction] = reactive([], recompose=True)
 
     def __init__(self, ):
         super().__init__()
@@ -64,6 +65,7 @@ class UserInfoWidget(Widget):
         self.logged_in_user = user
         self.update_balance(None)
 
+
     def update_balance(self, data):
         log("UserInfoWidget received pool update")
         if self.logged_in_user is None:
@@ -75,6 +77,18 @@ class UserInfoWidget(Widget):
         self.balance = wallet.balance
         self.reserved_balance = wallet.reserved_balance
         self.unconfirmed_balance = wallet.unconfirmed_balance
+        self.update_own_transactions()
+
+    def update_own_transactions(self):
+        if self.logged_in_user is None:
+            self.own_transactions = []
+            return
+
+        transaction_pool_txs = Pool.get_instance().get_transactions_for_address(self.logged_in_user.address)
+        block_txs = Ledger.get_instance().get_transactions_for_address(self.logged_in_user.address);
+
+
+        self.own_transactions = transaction_pool_txs + block_txs
 
     def compose(self) -> ComposeResult:
         log("Composing UserInfoWidget with logged_in_user: {}".format(self.logged_in_user))
@@ -92,7 +106,8 @@ class UserInfoWidget(Widget):
             )
             return
 
-        txs = []
+        txs = self.own_transactions
+        txs.sort(key=lambda tx: tx.timestamp)
         txs_widgets = list(map(lambda tx: TransactionListingWidget(tx), txs))
 
         balance = self.balance.quantize(Decimal("0.00"))
@@ -100,9 +115,9 @@ class UserInfoWidget(Widget):
         spendable_balance = (self.balance + self.reserved_balance).quantize(Decimal("0.00"))
         unconfirmed_balance = self.unconfirmed_balance.quantize(Decimal("0.00"))
 
-
         yield Vertical(
             Label(f"User: {self.logged_in_user.username}", classes="block__title"),
+            Label(f"Address: {self.logged_in_user.address}", classes="block__title"),
             Vertical(
                 Horizontal(
                     Label(f"Balance: {balance}", classes="col__label"),
@@ -129,6 +144,7 @@ class UserInfoWidget(Widget):
                 ),
                 classes="row"
             ),
+            Label(f"Transactions ({len(txs)}):", classes="block__title"),
             VerticalScroll(
                 *txs_widgets,
                 classes="transactions_scroll"

@@ -142,3 +142,7 @@ class Pool(AbstractPickableSingleton, Subscribable):
         # Only override for type hinting purposes
         """ Get the singleton instance of the Pool."""
         return super().get_instance()
+
+    def get_transactions_for_address(self, address: str) -> list["Transaction"]:
+        """ Get all transactions from pool for the given address (as sender or receiver). """
+        return [tx for tx in self.get_instance()._transactions if tx.sender_address == address or tx.receiver_address == address]
