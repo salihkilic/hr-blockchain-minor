@@ -142,7 +142,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
             raise InvalidBlockException("Previous block is not accepted.")
 
         # Enforce 3-minute spacing between blocks (non-genesis)
-        if block.number != 0:
+        # Skip check for genesis and block #1
+        if block.number != 0 and block.number != 1:
             from datetime import datetime
             prev_ts = datetime.fromisoformat(previous.timestamp)
             this_ts = datetime.fromisoformat(block.timestamp)
@@ -288,6 +289,11 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         transactions = []
         for block in self._blocks.values():
             for tx in block.transactions:
+                if tx.sender_address == address or tx.receiver_address == address:
+                    transactions.append(tx)
+        pending_block = self.get_pending_block()
+        if pending_block is not None:
+            for tx in pending_block.transactions:
                 if tx.sender_address == address or tx.receiver_address == address:
                     transactions.append(tx)
         return transactions
