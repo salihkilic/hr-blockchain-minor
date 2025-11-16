@@ -58,6 +58,7 @@ class AbstractPickableSingleton(ABC):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "wb") as f:
             pickle.dump(instance, cast(Any, f))
+        cls._fs_service.update_hash_for_file(file_path)
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:
@@ -89,3 +90,8 @@ class AbstractPickableSingleton(ABC):
             return
         cls._save()
         cls._instance = None
+
+    @classmethod
+    def force_save(cls):
+        """ Force saving the current instance to disk. FOR DEBUGGING PURPOSES ONLY. """
+        cls._save()

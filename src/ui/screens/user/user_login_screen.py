@@ -87,8 +87,6 @@ class UserLoginScreen(Screen):
             self.app.switch_screen("register_screen")
         if event.button.id == "cancel":
             self.app.pop_screen()
-        if event.button.id == "continue":
-            self.app.pop_screen()
 
     def _try_logging_in(self):
         user_service = UserService()
@@ -103,7 +101,8 @@ class UserLoginScreen(Screen):
             password_input = self.query_one("#password", Input)
             password_input.value = ""
 
-            self.app.pop_screen()
+            from ui.screens.startup import LedgerValidationScreen
+            self.app.switch_screen(LedgerValidationScreen())
         except InvalidCredentialsException as e:
             log(f"Login failed: {e}")
             self.login_errors = [str(e)]

@@ -16,7 +16,7 @@ class AlertScreen(Screen):
     DEFAULT_CSS = """
         AlertScreen{
             margin: 2;
-            padding: 1;
+            padding: 2;
         }
         Label {
             margin: 1 2;
@@ -27,9 +27,11 @@ class AlertScreen(Screen):
         }
     """
 
-    def __init__(self, alert: UIAlert):
+    def __init__(self, alert: UIAlert, terminate_after_dismiss: bool = False, callback=None):
         super().__init__()
+        self.terminate_after_dismiss = terminate_after_dismiss
         self.alert = alert
+        self.callback = callback
 
     def compose(self) -> ComposeResult:
         vertical = Vertical(
@@ -54,8 +56,16 @@ class AlertScreen(Screen):
 
     async def on_mount(self) -> None:
         if self.alert.dismissed_automatically:
-            self.set_timer(5, lambda: self.app.call_later(self.app.pop_screen))
+            self.set_timer(4, lambda: self.app.call_later(self._dismiss_alert))
+
+    def _dismiss_alert(self):
+        if self.terminate_after_dismiss:
+            self.app.exit()
+        if self.callback:
+            self.callback()
+        else:
+            self.app.pop_screen()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close":
-            self.app.pop_screen()
+            self._dismiss_alert()

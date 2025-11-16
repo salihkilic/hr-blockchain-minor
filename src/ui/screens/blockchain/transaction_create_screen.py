@@ -47,33 +47,16 @@ class TransactionCreateScreen(Screen):
     amount = reactive(Decimal("0.0"))
     fee = reactive(Decimal("0.0"))
 
-    spendable_balance: Decimal = reactive(Decimal("0.0"), recompose=True)
-
     def __init__(self):
         super().__init__()
 
-    def on_mount(self):
-        UserService.subscribe(self.update_spendable_balance)
-
-    def update_spendable_balance(self, user):
-        if user is not None:
-            from models import Wallet
-            wallet = Wallet.from_user(user)
-            self.spendable_balance = wallet.spendable_balance
-        else:
-            self.spendable_balance = Decimal("0.0")
-
     def compose(self) -> ComposeResult:
-
-        spendable_balance = self.spendable_balance.quantize(Decimal("0.00"))
-
         error_labels = [Label(f"{error}", classes="tx_error") for error in self.tx_errors]
 
         yield Vertical(
             *error_labels,
             Label("Create a new transaction"),
-            Label(f"Spendable balance: {spendable_balance}", classes="balance " + ("balance--warning" if spendable_balance <= 0 else "")),
-            Input(placeholder="To", id="to"),
+            Input(placeholder="To (username)", id="to"),
             Input(placeholder="Amount", id="amount"),
             Input(placeholder="Fee", id="fee"),
             Horizontal(
@@ -118,7 +101,6 @@ class TransactionCreateScreen(Screen):
 
         if self.tx_errors:
             return
-
         try:
             transaction = Transaction.create_by_receiver_username(
                 sender=UserService.logged_in_user,
@@ -126,13 +108,20 @@ class TransactionCreateScreen(Screen):
                 amount=self.amount,
                 fee=self.fee,
             )
-            transaction.validate(raise_exception=True)
+            transaction.validate(raise_exception=True, include_reserved_balance=True)
         except InvalidTransactionException as e:
             self.tx_errors.append(str(e))
             return
         except InsufficientBalanceException as e:
             self.tx_errors.append(str(e))
             return
+
+        # Clear all fields
+        self.to = ""
+        self.amount = Decimal("0.0")
+        self.fee = Decimal("0.0")
+
+        self.tx_errors = []
 
         from blockchain import Pool
         Pool.get_instance().add_transaction(transaction)

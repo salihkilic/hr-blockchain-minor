@@ -28,6 +28,7 @@ class DatabaseConnection:
 
     def _db_close(self) -> None:
         """ Closes the connection to the SQLite database if it is open. """
+        self.FileSystemService.update_hash_for_file(self.db_path)
         if self._db_connection is not None:
             self._db_connection.close()
             self._db_connection = None
