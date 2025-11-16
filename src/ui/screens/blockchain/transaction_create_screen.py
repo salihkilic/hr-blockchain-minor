@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from textual import log
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalScroll, Vertical, Horizontal
 from textual.reactive import reactive
@@ -49,8 +50,13 @@ class TransactionCreateScreen(Screen):
 
     def __init__(self):
         super().__init__()
+        self.tx_errors = []  # reset per instance
+        self.to = ""
+        self.amount = Decimal("0.0")
+        self.fee = Decimal("0.0")
 
     def compose(self) -> ComposeResult:
+        log("Composing TransactionCreateScreen with errors: ", self.tx_errors)
         error_labels = [Label(f"{error}", classes="tx_error") for error in self.tx_errors]
 
         yield Vertical(
@@ -83,6 +89,8 @@ class TransactionCreateScreen(Screen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close":
+            self.tx_errors = []
+            self.mutate_reactive(TransactionCreateScreen.tx_errors)
             self.app.pop_screen()
         if event.button.id == "create":
             self._create_transaction()
@@ -111,9 +119,11 @@ class TransactionCreateScreen(Screen):
             transaction.validate(raise_exception=True, include_reserved_balance=True)
         except InvalidTransactionException as e:
             self.tx_errors.append(str(e))
+            self.mutate_reactive(TransactionCreateScreen.tx_errors)
             return
         except InsufficientBalanceException as e:
             self.tx_errors.append(str(e))
+            self.mutate_reactive(TransactionCreateScreen.tx_errors)
             return
 
         # Clear all fields
@@ -131,3 +141,6 @@ class TransactionCreateScreen(Screen):
             message="The transaction has been created successfully and is added to the Pool.",
             alert_type=AlertType.SUCCESS
         )))
+
+        self.mutate_reactive(TransactionCreateScreen.tx_errors)
+

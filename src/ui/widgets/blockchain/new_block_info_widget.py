@@ -75,7 +75,7 @@ class NewBlockInfoWidget(Widget):
             Vertical(
                 Horizontal(
                     Button("Mine block", classes="button", id="mine_block"),
-                    Button("Move all blocks back to the pool", id="move_all_blocks", classes="button"),
+                    Button("Move all transactions back to the pool", id="move_all_blocks", classes="button"),
                     classes="button_col"
                 ),
                 classes="button_row"
