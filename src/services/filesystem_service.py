@@ -10,20 +10,27 @@ import tempfile
 import time
 from datetime import datetime
 
-
 class FileSystemService:
 
     _tmp_data_root: Optional[str] = None
+
+    _file_targets = [
+        FilesAndDirectories.USERS_DB_FILE_NAME
+    ]
 
     def __init__(self, repo_root: Optional[str] = None):
         self.repo_root = repo_root
         if repo_root is None:
             self.repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
+    @classmethod
+    def get_name(cls) -> str:
+        """ Return a name that can be used for user feedback """
+        return "Shared files"
+
     def initialize_data_files(self):
-        self.get_data_file_path(FilesAndDirectories.USERS_DB_FILE_NAME, create_if_missing=True)
-        self.get_data_file_path(FilesAndDirectories.POOL_FILE_NAME, create_if_missing=True)
-        self.get_data_file_path(FilesAndDirectories.LEDGER_FILE_NAME, create_if_missing=True)
+        for target in self.__class__._file_targets:
+            self.get_data_file_path(target, create_if_missing=True)
 
     def get_src_root(self) -> str:
         """ Returns the absolute path to the 'src' directory of the project. """
@@ -219,11 +226,7 @@ class FileSystemService:
 
     def verify_all_data_files(self) -> Dict[str, Dict[str, Any]]:
         """Verify all canonical data files (ledger, pool, users db). Returns mapping filename -> result dict."""
-        targets = [
-            FilesAndDirectories.LEDGER_FILE_NAME,
-            FilesAndDirectories.POOL_FILE_NAME,
-            FilesAndDirectories.USERS_DB_FILE_NAME,
-        ]
+        targets = self.__class__._file_targets
         results: Dict[str, Dict[str, Any]] = {}
         for fn in targets:
             try:
@@ -234,11 +237,7 @@ class FileSystemService:
 
     def initialize_hash_store(self) -> None:
         """Initialize the hash store by computing and storing hashes for all canonical data files."""
-        targets = [
-            FilesAndDirectories.LEDGER_FILE_NAME,
-            FilesAndDirectories.POOL_FILE_NAME,
-            FilesAndDirectories.USERS_DB_FILE_NAME,
-        ]
+        targets = self.__class__._file_targets
         for fn in targets:
             try:
                 self.update_hash_for_file(fn)
@@ -247,11 +246,7 @@ class FileSystemService:
 
     def can_hash_store_be_initialized(self):
         """ Checks if the has store can be initialized (i.e., all data files exist, but are empty). """
-        targets = [
-            FilesAndDirectories.LEDGER_FILE_NAME,
-            FilesAndDirectories.POOL_FILE_NAME,
-            FilesAndDirectories.USERS_DB_FILE_NAME,
-        ]
+        targets = self.__class__._file_targets
         for fn in targets:
             try:
                 file_path = self.get_data_file_path(fn, create_if_missing=False)

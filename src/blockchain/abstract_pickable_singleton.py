@@ -4,13 +4,13 @@ import warnings
 from abc import ABC
 from typing import Optional, cast, Any
 
-from services import FileSystemService
+from services import FileSystemService, NodeFileSystemService
 
 
 class AbstractPickableSingleton(ABC):
 
     _instance = None
-    _fs_service: FileSystemService = FileSystemService()
+    _fs_service: FileSystemService = NodeFileSystemService()
 
     def __init__(self, file_path: Optional[str] = None):
         """ Initializes the singleton instance. """

@@ -10,7 +10,7 @@ class DatabaseConnection:
         from services import FileSystemService
         self.FileSystemService = FileSystemService()
 
-        db_file_path = self.FileSystemService.get_data_file_path("users.sqlite3")
+        db_file_path = self.FileSystemService.get_data_file_path(data_filename="users.sqlite3")
 
         self.db_path = db_file_path
         self._db_connection: sqlite3.Connection | None = None

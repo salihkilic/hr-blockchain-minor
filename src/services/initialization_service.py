@@ -2,21 +2,25 @@ class InitializationService:
 
     @classmethod
     def initialize_application(cls):
-        from services import FileSystemService
+        from services import FileSystemService, NodeFileSystemService
         filesystem_service = FileSystemService()
         filesystem_service.initialize_data_files()
+        node_filesystem_service = NodeFileSystemService()
+        node_filesystem_service.initialize_data_files()
 
-        if not filesystem_service.hash_store_exists():
-            if not filesystem_service.can_hash_store_be_initialized():
-                cls.exit_with_error_message("Hash store cannot be initialized because of existing data files. The system cannot verify integrity.")
-            filesystem_service.initialize_hash_store()
-        else:
-            results = filesystem_service.verify_all_data_files()
-            one_or_more_failures = any(not results[file]['ok'] for file in results)
-            if one_or_more_failures:
-                reasons = [f"{file}: {results[file]['reason']}" for file in results if not results[file]['ok']]
-                cls.exit_with_error_message(f"Data file integrity verification failed:\n" + "\n".join(reasons))
+        filesystems_services = [filesystem_service, node_filesystem_service]
 
+        for fss in filesystems_services:
+            if not fss.hash_store_exists():
+                if not fss.can_hash_store_be_initialized():
+                    cls.exit_with_error_message(f"In {fss.__class__.get_name().lower()} hash store cannot be initialized because of existing data files. The system cannot verify integrity.")
+                fss.initialize_hash_store()
+            else:
+                results = fss.verify_all_data_files()
+                one_or_more_failures = any(not results[file]['ok'] for file in results)
+                if one_or_more_failures:
+                    reasons = [f"{file}: {results[file]['reason']}" for file in results if not results[file]['ok']]
+                    cls.exit_with_error_message(f"In {fss.__class__.get_name().lower()} data file integrity verification failed:\n" + "\n".join(reasons))
 
         from repositories.user import UserRepository
         user_repository = UserRepository()
