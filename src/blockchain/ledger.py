@@ -104,8 +104,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
                 if block.status != BlockStatus.ACCEPTED:
                     errors.append(f"Block #{block.number} is not ACCEPTED.")
 
-            # Timing rules (non-genesis)
-            if previous is not None:
+            # Timing rules (non-genesis) and first block after genesis
+            if previous is not None and block.number != 1:
                 prev_ts = datetime.fromisoformat(previous.timestamp)
                 this_ts = datetime.fromisoformat(block.timestamp)
                 delta = (this_ts - prev_ts).total_seconds()
