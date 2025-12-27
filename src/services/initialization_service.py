@@ -1,7 +1,7 @@
 class InitializationService:
 
     @classmethod
-    def initialize_application(cls):
+    def initialize_application(cls, node_number: int):
         from services import FileSystemService, NodeFileSystemService
         filesystem_service = FileSystemService()
         filesystem_service.initialize_data_files()
@@ -25,6 +25,18 @@ class InitializationService:
         from repositories.user import UserRepository
         user_repository = UserRepository()
         user_repository.setup_database_structure()
+
+        from services import NetworkingService
+        NetworkingService.get_instance().configure(
+            port=5555 if node_number == 1 else 5556,
+            peer_addresses=[ "localhost:5556" if node_number == 1 else "localhost:5555" ],
+        )
+        NetworkingService.get_instance().start()
+
+        NetworkingService.get_instance().register_handler(
+            NetworkingService.TX_BROADCAST_TOPIC,
+            lambda payload, _: Pool.get_instance().handle_network_transaction(payload)
+        )
 
         from blockchain import Pool
         Pool.get_instance()

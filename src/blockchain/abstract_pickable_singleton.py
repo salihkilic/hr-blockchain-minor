@@ -4,29 +4,15 @@ import warnings
 from abc import ABC
 from typing import Optional, cast, Any
 
+from base import AbstractSingleton
 from services import FileSystemService, NodeFileSystemService
 
 
-class AbstractPickableSingleton(ABC):
+class AbstractPickableSingleton(AbstractSingleton):
 
     _instance = None
     _fs_service: FileSystemService = NodeFileSystemService()
 
-    def __init__(self, file_path: Optional[str] = None):
-        """ Initializes the singleton instance. """
-        super().__init__()
-        self.__class__._instance = self
-
-    @classmethod
-    def create_instance(cls) -> None:
-        """
-        Deprecated: Old behavior to create the singleton instance.
-        Use get_instance() instead to get or create the instance.
-        """
-        if cls._instance is not None:
-            raise Exception("Instance already created. Use get_instance() to access it.")
-        # Delegate to get_instance which will attempt to load from disk or create.
-        cls.get_instance()
 
     @classmethod
     def get_instance(cls):
