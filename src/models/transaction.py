@@ -9,13 +9,12 @@ from decimal import Decimal, ROUND_DOWN
 from exceptions.transaction import InvalidTransactionException, InsufficientBalanceException
 from .wallet import Wallet
 from .abstract_hashable_model import AbstractHashableModel
-from .abstract_serializable_model import AbstractSerializableModel
 from .user import User
 from .enum.transaction_type import TransactionType
 
 
 @dataclass
-class Transaction(AbstractHashableModel, AbstractSerializableModel):
+class Transaction(AbstractHashableModel):
     """
     Account-based transaction model
     """

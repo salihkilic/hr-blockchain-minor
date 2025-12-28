@@ -1,1 +1,2 @@
 from .login_validation_completed_event import LoginValidationCompletedEvent
+from .block_added_from_network_event import BlockAddedFromNetworkEvent

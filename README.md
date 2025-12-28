@@ -23,10 +23,14 @@ And your app in another terminal window with:
 The `--node` argument specifies the node number to run.
 
 > Each node uses its own local data directory containing a private copy of the ledger and transaction pool. Nodes
-synchronize these states through network communication and consensus, not by sharing files. The user database is shared
-between nodes to provide consistent user and key management. For this assignment, a user is assumed to be logged in on
-only one node at a time; concurrent logins with the same user are not supported and multi-login safety is intentionally
-not implemented.
+> synchronize these states through network communication and consensus, not by sharing files. The user database is shared
+> between nodes to provide consistent user and key management. For this assignment, a user is assumed to be logged in on
+> only one node at a time; concurrent logins with the same user are not supported and multi-login safety is intentionally
+> not implemented.
+
+> Consensus is achieved by independent block validation by multiple nodes. Each node decides locally whether to accept
+> or reject a block based on deterministic validation rules. A block is finalized only after receiving sufficient
+> validation flags, ensuring eventual consistency across node ledgers.
 
 Some nice links:
 

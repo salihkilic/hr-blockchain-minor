@@ -1,13 +1,16 @@
+import logging
 from typing import Optional
 
 from textual import log
 
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
+from events import BlockAddedFromNetworkEvent
 from models import Block
 from models.block import BlockStatus, ValidationFlag
 from exceptions.mining import InvalidBlockException
 from models.enum import TransactionType
+from services import NetworkingService
 
 
 class Ledger(AbstractPickableSingleton, Subscribable):
@@ -164,6 +167,26 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         self._pending_blocks[block.calculated_hash] = block
         self._save()
 
+    def handle_network_block(self, request_data: dict) -> None:
+        """ Handle a new block received from the network. """
+        block_data = request_data['block_data']
+        logging.debug("Received network block payload: %s", {k: block_data.get(k) for k in (list(block_data.keys())[:10])} if isinstance(block_data, dict) else block_data)
+        block = Block.from_dict(block_data)
+        try:
+            self.submit_block(block)
+        except InvalidBlockException as e:
+            # Log invalid blocks from the network for observability but don't re-raise
+            logging.exception("Failed to add block received from network: %s", e)
+            return
+        BlockAddedFromNetworkEvent.dispatch()
+
+    def submit_network_block(self, block: Block) -> None:
+        """ Handle broadcasting a new block to the network. """
+        NetworkingService.get_instance().broadcast_new_block(
+            block_number=block.number,
+            block_payload=block.to_dict()
+        )
+
     def get_pending_block(self) -> Optional[Block]:
         if not self.has_pending_blocks():
             return None
@@ -243,7 +266,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         Pool.get_instance().remove_transactions(block.transactions)
 
     @classmethod
-    def mine_new_block(cls):
+    def mine_new_block(cls) -> Block:
         """ Mines a new block using the currently logged-in user as miner and the transactions marked for inclusion in the pool.
             Automatically adds the block for pending and clear te necessary pool transactions.
         """
@@ -264,6 +287,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
 
         Ledger.get_instance().submit_block(block)
         Pool.get_instance().remove_marked_transaction_from_pool()
+
+        return block
 
     @classmethod
     def _save(cls) -> None:

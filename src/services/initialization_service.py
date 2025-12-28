@@ -38,6 +38,11 @@ class InitializationService:
             lambda payload, _: Pool.get_instance().handle_network_transaction(payload)
         )
 
+        NetworkingService.get_instance().register_handler(
+            NetworkingService.BLOCK_BROADCAST_TOPIC,
+            lambda payload, _: Ledger.get_instance().handle_network_block(payload)
+        )
+
         from blockchain import Pool
         Pool.get_instance()
         from blockchain import Ledger
