@@ -163,6 +163,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         from blockchain import Pool
         Pool.get_instance().validate_transaction_in_block_for_fairness(block)
 
+        Pool.get_instance().remove_transactions(block.transactions, True)
+
         block.status = BlockStatus.PENDING
         self._pending_blocks[block.calculated_hash] = block
         self._save()
@@ -286,7 +288,6 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         log("Block mined with nonce %d and hash %s" % (block.nonce, block.calculated_hash))
 
         Ledger.get_instance().submit_block(block)
-        Pool.get_instance().remove_marked_transaction_from_pool()
 
         return block
 

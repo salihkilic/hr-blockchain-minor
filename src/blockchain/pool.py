@@ -55,8 +55,12 @@ class Pool(AbstractPickableSingleton, Subscribable):
         self.get_instance()._transactions.remove(transaction)
         self._save()
 
-    def remove_transactions(self, transactions: list[Transaction]) -> None:
+    def remove_transactions(self, transactions: list[Transaction], include_marked_for_block: bool = False) -> None:
         self.get_instance()._transactions = [tx for tx in self.get_instance()._transactions if tx not in transactions]
+        if include_marked_for_block:
+            self.get_instance()._transactions_marked_for_block = [
+                tx for tx in self.get_instance()._transactions_marked_for_block if tx not in transactions
+            ]
         self._save()
 
     def get_transactions(self) -> list[Transaction]:

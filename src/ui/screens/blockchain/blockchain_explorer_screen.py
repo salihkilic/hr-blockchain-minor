@@ -1,3 +1,5 @@
+import logging
+
 from textual import events, log
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -6,6 +8,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
 from blockchain import Ledger
+from events import BlockAddedFromNetworkEvent
 from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget, UserInfoWidget, NewBlockInfoWidget
 
 
@@ -24,11 +27,12 @@ class BlockchainExplorerScreen(Screen):
     def on_mount(self):
         from blockchain import Pool
         Pool.subscribe(self.update_block_pending_mining_status)
+        BlockAddedFromNetworkEvent.subscribe(self.update_block_pending_mining_status)
 
     def update_block_pending_mining_status(self, param):
         from blockchain import Pool
         transactions_marked = Pool.get_instance().get_transactions_marked_for_block()
-        log(f"Updating block_pending_mining status: {len(transactions_marked)}")
+        logging.info(f"Updating block pending mining status. Transactions marked for block: {len(transactions_marked)}")
         self.block_pending_mining = len(transactions_marked) > 0
 
     def compose(self) -> ComposeResult:
