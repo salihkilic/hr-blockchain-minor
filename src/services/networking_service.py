@@ -15,6 +15,9 @@ class NetworkingService(Subscribable, AbstractSingleton):
     BLOCK_SYNC_RESPONSE_TOPIC = "blocks.sync.response"
     BLOCK_BROADCAST_TOPIC = "blocks.broadcast"
 
+    # Block validation related topics
+    VALIDATION_BROADCAST_TOPIC = "validations.broadcast"
+
     # Transaction pool related topics
     TX_POOL_REQUEST_TOPIC = "transactions.pool.request"
     TX_POOL_RESPONSE_TOPIC = "transactions.pool.response"
@@ -72,15 +75,14 @@ class NetworkingService(Subscribable, AbstractSingleton):
 
     def broadcast(self, message: str, topic: str = ""):
         # Truncate long messages in logs to keep output readable
-        truncated = message if len(message) <= 200 else message[:200] + "..."
-        logging.debug(f"Broadcasting on topic '{topic}': {truncated}")
+        logging.debug(f"Broadcasting on topic '{topic}': {message}")
         if topic:
             self.publisher.send_string(f"{topic} {message}")
         else:
             self.publisher.send_string(message)
 
     def _broadcast_json(self, topic: str, payload: dict[str, Any]) -> None:
-        logging.debug("Broadcasting JSON payload on topic '%s': %s", topic, json.dumps(payload)[:200])
+        logging.debug("Broadcasting JSON payload on topic '%s': %s", topic, json.dumps(payload))
         self.broadcast(json.dumps(payload), topic=topic)
 
     # -------- Block sync helpers (messaging only) --------
@@ -102,6 +104,13 @@ class NetworkingService(Subscribable, AbstractSingleton):
             "block_data": block_payload,
         })
 
+    def broadcast_new_validation(self, validation_payload: dict[str, Any], block_hash: str) -> None:
+        logging.debug("Broadcasting new validation")
+        self._broadcast_json(self.VALIDATION_BROADCAST_TOPIC, {
+            "validation_data": validation_payload,
+            "block_hash": block_hash,
+        })
+
     # -------- Transaction pool helpers (messaging only) --------
     def request_pool_snapshot(self) -> None:
         logging.debug("Requesting transaction pool snapshot")
@@ -121,7 +130,7 @@ class NetworkingService(Subscribable, AbstractSingleton):
         while self.running:
             try:
                 message = await self.subscriber.recv_string()
-                logging.debug(f"Received raw message: {message[:200]}")
+                logging.debug(f"Received raw message: {message}")
                 topic, payload = self._split_message(message)
                 logging.debug(f"Parsed message. topic='{topic}', payload_keys={list(payload.keys())}")
                 self._dispatch_message(topic, payload)

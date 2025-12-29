@@ -8,6 +8,7 @@ from textual.widgets import Footer, Label, LoadingIndicator
 from blockchain import Ledger
 from exceptions.mining import InvalidBlockException
 from exceptions.transaction import InvalidTransactionException
+from models import ValidationFlag
 from models.dto import UIAlert
 from models.enum import AlertType
 from services.user_service import UserService
@@ -102,17 +103,17 @@ class BlockValidationScreen(Screen):
                 result = pending_block.validate(current_block)
 
                 if not result:
-                    Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
+                    validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
                                                               False, 'Block could not be validated.')
                     raise InvalidBlockException("Pending block is invalid.")
 
                 if not result.valid:
                     # TODO Handle invalid transactions
-                    Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
+                    validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
                                                               result.valid, '\n'.join(result.reasons))
                     raise InvalidBlockException('\n'.join(result.reasons))
 
-                Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
+                validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
                                                           result.valid)
         except (InvalidBlockException, InvalidTransactionException) as e:
             from ui.screens.startup import TransactionRemovalScreen
@@ -128,7 +129,11 @@ class BlockValidationScreen(Screen):
             return
 
             # success case
-        self.app.call_from_thread(self.show_ledger_valid)
+        self.app.call_from_thread(lambda: self.on_validation_successful(validation_flag, pending_block.calculated_hash))
+
+    def on_validation_successful(self, validation_flag: ValidationFlag, block_hash: str):
+        Ledger.get_instance().submit_network_validation(validation_flag, block_hash)
+        self.show_ledger_valid()
 
     def show_ledger_valid(self):
         from ui.screens.startup import TransactionRemovalScreen

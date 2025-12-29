@@ -43,6 +43,11 @@ class InitializationService:
             lambda payload, _: Ledger.get_instance().handle_network_block(payload)
         )
 
+        NetworkingService.get_instance().register_handler(
+            NetworkingService.VALIDATION_BROADCAST_TOPIC,
+            lambda payload, _: Ledger.get_instance().handle_network_validation(payload)
+        )
+
         from blockchain import Pool
         Pool.get_instance()
         from blockchain import Ledger

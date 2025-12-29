@@ -31,6 +31,19 @@ class ValidationFlag:
     at: str = field(default_factory=_now_iso)
     reason: Optional[str] = None
 
+    def to_dict(self):
+        data = self.__dict__.copy()
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ValidationFlag":
+        return cls(
+            validator=data['validator'],
+            valid=data['valid'],
+            at=data['at'],
+            reason=data.get('reason')
+        )
+
 
 @dataclass
 class BlockValidationResult:

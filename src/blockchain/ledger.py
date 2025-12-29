@@ -5,7 +5,7 @@ from textual import log
 
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
-from events import BlockAddedFromNetworkEvent
+from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
 from models import Block
 from models.block import BlockStatus, ValidationFlag
 from exceptions.mining import InvalidBlockException
@@ -196,7 +196,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         return next(iter(self._pending_blocks.values()))
 
     def add_validation_flag(self, block_hash: str, validator_address: str, valid: bool,
-                            reason: Optional[str] = None) -> dict:
+                            reason: Optional[str] = None) -> ValidationFlag:
         block = self._pending_blocks.get(block_hash)
         if block is None:
             raise InvalidBlockException("Pending block not found.")
@@ -208,7 +208,9 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         if any(vf.validator == validator_address for vf in block.validators):
             raise InvalidBlockException("Validator has already validated this block.")
 
-        block.validators.append(ValidationFlag(validator=validator_address, valid=valid, reason=reason))
+        validation_flag = ValidationFlag(validator=validator_address, valid=valid, reason=reason)
+
+        block.validators.append(validation_flag)
         valid_count = sum(1 for vf in block.validators if vf.valid)
         invalid_count = sum(1 for vf in block.validators if not vf.valid)
 
@@ -218,11 +220,34 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         elif invalid_count >= 3 and valid_count < 3:
             self._finalize_reject(block)
         self._save()
-        return {
-            "status": block.status.value if block.status else None,
-            "valid_flags": valid_count,
-            "invalid_flags": invalid_count
-        }
+
+        return validation_flag
+
+    def submit_network_validation(self, validation_flag: ValidationFlag, block_hash: str) -> None:
+        """ Handle broadcasting a new validation to the network. """
+        NetworkingService.get_instance().broadcast_new_validation(
+            validation_payload=validation_flag.to_dict(),
+            block_hash=block_hash
+        )
+
+    def handle_network_validation(self, request_data: dict) -> None:
+        """ Handle a new validation received from the network. """
+        validation_data = request_data['validation_data']
+        block_hash = request_data['block_hash']
+        logging.debug("Received network validation payload: %s for block %s", {k: validation_data.get(k) for k in (list(validation_data.keys())[:10])} if isinstance(validation_data, dict) else validation_data, block_hash)
+        validation_flag = ValidationFlag.from_dict(validation_data)
+        try:
+            self.add_validation_flag(
+                block_hash=block_hash,
+                validator_address=validation_flag.validator,
+                valid=validation_flag.valid,
+                reason=validation_flag.reason
+            )
+        except InvalidBlockException as e:
+            # Log invalid validations from the network for observability but don't re-raise
+            logging.exception("Failed to add validation received from network: %s", e)
+            return
+        ValidationAddedFromNetworkEvent.dispatch()
 
     def _finalize_accept(self, block: Block) -> None:
         block.status = BlockStatus.ACCEPTED

@@ -8,7 +8,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Placeholder, Label
 
 from blockchain import Ledger
-from events import BlockAddedFromNetworkEvent
+from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
 from ui.widgets.blockchain import BlockInfoWidget, TransactionPoolWidget, UserInfoWidget, NewBlockInfoWidget
 
 
@@ -28,12 +28,15 @@ class BlockchainExplorerScreen(Screen):
         from blockchain import Pool
         Pool.subscribe(self.update_block_pending_mining_status)
         BlockAddedFromNetworkEvent.subscribe(self.update_block_pending_mining_status)
+        ValidationAddedFromNetworkEvent.subscribe(lambda _: self.app.call_later(self.recompose))
 
     def update_block_pending_mining_status(self, param):
         from blockchain import Pool
         transactions_marked = Pool.get_instance().get_transactions_marked_for_block()
         logging.info(f"Updating block pending mining status. Transactions marked for block: {len(transactions_marked)}")
         self.block_pending_mining = len(transactions_marked) > 0
+
+
 
     def compose(self) -> ComposeResult:
         column_user_info = Vertical(
