@@ -57,8 +57,9 @@ class BlockInfoWidget(Widget):
         self.update_state(None)
 
     def on_mount(self) -> None:
-        from events import LoginValidationCompletedEvent
+        from events import LoginValidationCompletedEvent, BlockAddedFromNetworkEvent
         LoginValidationCompletedEvent.subscribe(self.update_state)
+        BlockAddedFromNetworkEvent.subscribe(self.update_state)
 
     def update_state(self, param):
         log("Updating BlockInfoWidget state...")

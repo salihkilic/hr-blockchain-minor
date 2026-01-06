@@ -209,3 +209,6 @@ __marimo__/
 ~$oject_instructions.docx
 
 /data*
+
+# Used for backing up data states during testing
+/*.zip

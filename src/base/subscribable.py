@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 
 
@@ -9,6 +10,7 @@ class Subscribable(ABC):
 
     @classmethod
     def _call_subscribers(cls, data):
+        logging.debug(f"Calling {len(cls._subscribers)} subscribers with data: {data}. From class: {cls.__name__}")
         for callback in cls._subscribers:
             callback(data)
 

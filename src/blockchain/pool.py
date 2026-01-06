@@ -1,12 +1,15 @@
 from typing import Optional
 from datetime import datetime
 
+from textual import log
+
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
 from exceptions.mining import InvalidBlockException
 from models import Transaction, Block
 from models.enum.transaction_type import TransactionType
-
+from services import NetworkingService
+import logging
 
 class Pool(AbstractPickableSingleton, Subscribable):
     _transactions: list[Transaction]
@@ -38,17 +41,26 @@ class Pool(AbstractPickableSingleton, Subscribable):
         self.get_instance()._transactions_marked_for_block = []
         self._save()
 
-    def add_transaction(self, transaction: Transaction, raise_exception: bool = True) -> None:
+    def add_transaction(self, transaction: Transaction, raise_exception: bool = True, broadcast_to_network: bool = True) -> None:
         transaction.validate(raise_exception)
         self.get_instance()._transactions.append(transaction)
         self._save()
+
+        if broadcast_to_network:
+            NetworkingService.get_instance().broadcast_new_transaction(
+                transaction_payload=transaction.to_dict()
+            )
 
     def remove_transaction(self, transaction: Transaction) -> None:
         self.get_instance()._transactions.remove(transaction)
         self._save()
 
-    def remove_transactions(self, transactions: list[Transaction]) -> None:
+    def remove_transactions(self, transactions: list[Transaction], include_marked_for_block: bool = False) -> None:
         self.get_instance()._transactions = [tx for tx in self.get_instance()._transactions if tx not in transactions]
+        if include_marked_for_block:
+            self.get_instance()._transactions_marked_for_block = [
+                tx for tx in self.get_instance()._transactions_marked_for_block if tx not in transactions
+            ]
         self._save()
 
     def get_transactions(self) -> list[Transaction]:
@@ -135,6 +147,21 @@ class Pool(AbstractPickableSingleton, Subscribable):
         """ Cancel a transaction in the pool. """
         self.remove_transaction(transaction)
         self._save()
+
+    def handle_network_transaction(self, request_data: dict) -> None:
+        """ Handle a new transaction received from the network. """
+        # Keep UI-visible log and also emit structured debug logs
+        transaction_data = request_data['transaction']
+        log(f"Received new transaction from network: {request_data}")
+        logging.debug("Received network transaction payload: %s", {k: transaction_data.get(k) for k in (list(transaction_data.keys())[:10])} if isinstance(transaction_data, dict) else transaction_data)
+        transaction = Transaction.from_dict(transaction_data)
+        try:
+            self.add_transaction(transaction, raise_exception=True, broadcast_to_network=False)
+        except Exception as e:
+            # Log invalid transactions from the network for observability but don't re-raise
+            logging.exception("Failed to add transaction received from network: %s", e)
+            return
+        self._call_subscribers(None)
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

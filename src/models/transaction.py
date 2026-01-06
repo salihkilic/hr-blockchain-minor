@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
@@ -256,3 +257,35 @@ class Transaction(AbstractHashableModel):
         # TODO: Check hash integrity
 
         return True
+
+    def to_dict(self):
+        return {
+            "hash": self.hash,
+            "receiver_address": self.receiver_address,
+            "sender_address": self.sender_address,
+            "sender_public_key": self.sender_public_key,
+            "sender_signature": self.sender_signature,
+            "amount": str(self.amount),
+            "fee": str(self.fee),
+            "kind": self.kind.value,
+            "timestamp": self.timestamp,
+            "is_invalid": self.is_invalid,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        logging.debug(f"Deserializing transaction from dict: {data}")
+        transaction = cls(
+            receiver_address=data["receiver_address"],
+            amount=Decimal(data["amount"]),
+            fee=Decimal(data["fee"]),
+            kind=TransactionType(data["kind"]),
+            sender_address=data.get("sender_address"),
+            sender_public_key=data.get("sender_public_key"),
+            sender_signature=data.get("sender_signature"),
+        )
+        transaction._hash = data["hash"]
+        transaction.timestamp = data["timestamp"]
+        transaction.is_invalid = data.get("is_invalid", False)
+        return transaction
+

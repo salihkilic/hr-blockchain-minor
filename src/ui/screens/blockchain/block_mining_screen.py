@@ -70,7 +70,7 @@ class BlockMiningScreen(Screen):
     def _start_block_mine(self):
         log("Starting block mining...")
         try:
-            Ledger.mine_new_block()
+            block = Ledger.mine_new_block()
         except InvalidTransactionException as e:
             self.app.call_from_thread(
                 self.app.switch_screen,
@@ -94,7 +94,12 @@ class BlockMiningScreen(Screen):
             return
 
             # success case
-        self.app.call_from_thread(self.show_mining_success)
+        self.app.call_from_thread(lambda: self.on_mining_success(block))
+
+    def on_mining_success(self, block: Block):
+        log("Block mined successfully.")
+        Ledger.get_instance().get_instance().submit_network_block(block)
+        self.show_mining_success()
 
 
     def show_mining_success(self):

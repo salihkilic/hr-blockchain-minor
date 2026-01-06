@@ -1,13 +1,16 @@
+import logging
 from typing import Optional
 
 from textual import log
 
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
+from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
 from models import Block
 from models.block import BlockStatus, ValidationFlag
 from exceptions.mining import InvalidBlockException
 from models.enum import TransactionType
+from services import NetworkingService
 
 
 class Ledger(AbstractPickableSingleton, Subscribable):
@@ -104,8 +107,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
                 if block.status != BlockStatus.ACCEPTED:
                     errors.append(f"Block #{block.number} is not ACCEPTED.")
 
-            # Timing rules (non-genesis)
-            if previous is not None:
+            # Timing rules (non-genesis) and first block after genesis
+            if previous is not None and block.number != 1:
                 prev_ts = datetime.fromisoformat(previous.timestamp)
                 this_ts = datetime.fromisoformat(block.timestamp)
                 delta = (this_ts - prev_ts).total_seconds()
@@ -160,9 +163,31 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         from blockchain import Pool
         Pool.get_instance().validate_transaction_in_block_for_fairness(block)
 
+        Pool.get_instance().remove_transactions(block.transactions, True)
+
         block.status = BlockStatus.PENDING
         self._pending_blocks[block.calculated_hash] = block
         self._save()
+
+    def handle_network_block(self, request_data: dict) -> None:
+        """ Handle a new block received from the network. """
+        block_data = request_data['block_data']
+        logging.debug("Received network block payload: %s", {k: block_data.get(k) for k in (list(block_data.keys())[:10])} if isinstance(block_data, dict) else block_data)
+        block = Block.from_dict(block_data)
+        try:
+            self.submit_block(block)
+        except InvalidBlockException as e:
+            # Log invalid blocks from the network for observability but don't re-raise
+            logging.exception("Failed to add block received from network: %s", e)
+            return
+        BlockAddedFromNetworkEvent.dispatch()
+
+    def submit_network_block(self, block: Block) -> None:
+        """ Handle broadcasting a new block to the network. """
+        NetworkingService.get_instance().broadcast_new_block(
+            block_number=block.number,
+            block_payload=block.to_dict()
+        )
 
     def get_pending_block(self) -> Optional[Block]:
         if not self.has_pending_blocks():
@@ -171,7 +196,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         return next(iter(self._pending_blocks.values()))
 
     def add_validation_flag(self, block_hash: str, validator_address: str, valid: bool,
-                            reason: Optional[str] = None) -> dict:
+                            reason: Optional[str] = None) -> ValidationFlag:
         block = self._pending_blocks.get(block_hash)
         if block is None:
             raise InvalidBlockException("Pending block not found.")
@@ -183,7 +208,9 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         if any(vf.validator == validator_address for vf in block.validators):
             raise InvalidBlockException("Validator has already validated this block.")
 
-        block.validators.append(ValidationFlag(validator=validator_address, valid=valid, reason=reason))
+        validation_flag = ValidationFlag(validator=validator_address, valid=valid, reason=reason)
+
+        block.validators.append(validation_flag)
         valid_count = sum(1 for vf in block.validators if vf.valid)
         invalid_count = sum(1 for vf in block.validators if not vf.valid)
 
@@ -193,11 +220,34 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         elif invalid_count >= 3 and valid_count < 3:
             self._finalize_reject(block)
         self._save()
-        return {
-            "status": block.status.value if block.status else None,
-            "valid_flags": valid_count,
-            "invalid_flags": invalid_count
-        }
+
+        return validation_flag
+
+    def submit_network_validation(self, validation_flag: ValidationFlag, block_hash: str) -> None:
+        """ Handle broadcasting a new validation to the network. """
+        NetworkingService.get_instance().broadcast_new_validation(
+            validation_payload=validation_flag.to_dict(),
+            block_hash=block_hash
+        )
+
+    def handle_network_validation(self, request_data: dict) -> None:
+        """ Handle a new validation received from the network. """
+        validation_data = request_data['validation_data']
+        block_hash = request_data['block_hash']
+        logging.debug("Received network validation payload: %s for block %s", {k: validation_data.get(k) for k in (list(validation_data.keys())[:10])} if isinstance(validation_data, dict) else validation_data, block_hash)
+        validation_flag = ValidationFlag.from_dict(validation_data)
+        try:
+            self.add_validation_flag(
+                block_hash=block_hash,
+                validator_address=validation_flag.validator,
+                valid=validation_flag.valid,
+                reason=validation_flag.reason
+            )
+        except InvalidBlockException as e:
+            # Log invalid validations from the network for observability but don't re-raise
+            logging.exception("Failed to add validation received from network: %s", e)
+            return
+        ValidationAddedFromNetworkEvent.dispatch()
 
     def _finalize_accept(self, block: Block) -> None:
         block.status = BlockStatus.ACCEPTED
@@ -243,7 +293,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         Pool.get_instance().remove_transactions(block.transactions)
 
     @classmethod
-    def mine_new_block(cls):
+    def mine_new_block(cls) -> Block:
         """ Mines a new block using the currently logged-in user as miner and the transactions marked for inclusion in the pool.
             Automatically adds the block for pending and clear te necessary pool transactions.
         """
@@ -263,7 +313,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         log("Block mined with nonce %d and hash %s" % (block.nonce, block.calculated_hash))
 
         Ledger.get_instance().submit_block(block)
-        Pool.get_instance().remove_marked_transaction_from_pool()
+
+        return block
 
     @classmethod
     def _save(cls) -> None:

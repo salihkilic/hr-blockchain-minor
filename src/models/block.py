@@ -31,6 +31,19 @@ class ValidationFlag:
     at: str = field(default_factory=_now_iso)
     reason: Optional[str] = None
 
+    def to_dict(self):
+        data = self.__dict__.copy()
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ValidationFlag":
+        return cls(
+            validator=data['validator'],
+            valid=data['valid'],
+            at=data['at'],
+            reason=data.get('reason')
+        )
+
 
 @dataclass
 class BlockValidationResult:
@@ -326,6 +339,7 @@ class Block:
     def from_dict(cls, data: Dict[str, Any]) -> "Block":
         data = data.copy()
         data['validators'] = [ValidationFlag(**vf) for vf in data.get('validators', [])]
+        data['transactions'] = [Transaction.from_dict(tx) for tx in data.get('transactions', [])]
         block = cls(
             number=data['number'],
             previous_hash=data.get('previous_hash'),
@@ -348,5 +362,6 @@ class Block:
         data['validators'] = [vf.__dict__ for vf in self.validators]
         if isinstance(self.status, BlockStatus):
             data['status'] = self.status.value
+        data['transactions'] = [tx.to_dict() for tx in self.transactions]
         return data
 
