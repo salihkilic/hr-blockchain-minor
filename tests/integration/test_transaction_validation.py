@@ -122,8 +122,8 @@ class TestTransactionValidation(unittest.TestCase):
         Pool.get_instance().add_transaction(signup_tx5)
 
         # Mine and add a block to confirm signup rewards; ensure miner is not user1 to avoid double-funding user1
-        from services.difficulty_service import DifficultyService
-        with patch.object(DifficultyService, "current_difficulty", 1), \
+        from services.difficulty_service import DifficultyService, MAX_TARGET
+        with patch.object(DifficultyService, "current_difficulty", MAX_TARGET), \
              patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
             upd_mock.return_value = None
             funding_block = Block.mine_with_transactions(

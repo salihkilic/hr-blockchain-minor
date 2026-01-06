@@ -134,9 +134,19 @@ class Block:
     # -----------------
     @staticmethod
     def _meets_difficulty(hash_hex: str, difficulty: int) -> bool:
-        if difficulty <= 0:
-            return True
-        return hash_hex.startswith("0" * difficulty)
+        # Note: !CHANGED! In this new system, higher difficulty value = easier mining (larger target).
+
+        # Negative difficulty is invalid
+        if difficulty < 0:
+            return False
+
+        # Target 0 meant "pass all" in previous difficulty system, backwards compatibility:
+        if difficulty == 0:
+             return True
+
+        # Meeting difficulty means hash value <= highest possible value
+        value = int(hash_hex, 16)
+        return value <= difficulty
 
     @classmethod
     def mine_with_transactions(

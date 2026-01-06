@@ -51,8 +51,8 @@ class TestMiningWorkflow(unittest.TestCase):
             transaction6
         ]
         # Keep difficulty low to mine quickly in tests
-        from services.difficulty_service import DifficultyService
-        with patch.object(DifficultyService, "current_difficulty", 1), \
+        from services.difficulty_service import DifficultyService, MAX_TARGET
+        with patch.object(DifficultyService, "current_difficulty", MAX_TARGET), \
              patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
             upd_mock.return_value = None
             block = Block.mine_with_transactions(
@@ -155,8 +155,8 @@ class TestMiningWorkflow(unittest.TestCase):
         assert required_transactions_after_block_mined[3] == transactions[10] # Second lowest fee transaction
 
         # Keep difficulty low and stable during block mining for fairness checks
-        from services.difficulty_service import DifficultyService
-        with patch.object(DifficultyService, "current_difficulty", 1), \
+        from services.difficulty_service import DifficultyService, MAX_TARGET
+        with patch.object(DifficultyService, "current_difficulty", MAX_TARGET), \
              patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
             upd_mock.return_value = None
 
