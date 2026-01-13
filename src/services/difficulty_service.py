@@ -6,15 +6,15 @@ from collections import deque
 import math
 
 
+# Max target = 2^256 - 1 (easiest difficulty)
+MAX_TARGET = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+
 @dataclass
 class DifficultyConfig:
-    min_time: float = 10.0       # seconds (lower threshold)
-    max_time: float = 20.0       # seconds (upper threshold)
-    min_difficulty: int = 0
-    max_difficulty: int = 1
-    window_size: int = 5         # number of recent samples to average
-    step_limit: int = 1          # Max step change per update (usually 1)
-    default_difficulty: int = 1  # Starting difficulty aligned with tests
+    target_time: float = 15.0       # seconds (ideal time to mine a block)
+    window_size: int = 5            # number of recent samples to average
+    default_difficulty: int = MAX_TARGET  # Starting difficulty (target). Max = Easiest.
 
 
 @dataclass
@@ -25,8 +25,7 @@ class DifficultyState:
 class DifficultyService:
     """
     Static utility that tracks recent mining times and computes a recommended
-    difficulty based on the current window average. It does NOT persist an internal
-    difficulty; you must pass your previous difficulty to current_difficulty(prev).
+    difficulty (target) based on the current window average.
     """
 
     cfg = DifficultyConfig()
@@ -38,25 +37,30 @@ class DifficultyService:
         if not (math.isfinite(mining_time) and mining_time > 0):
             return
         cls.state.times.append(mining_time)
-        new_difficulty = cls._calculate_difficulty()
-        # Apply at most 1 step per update toward target
-        if new_difficulty > cls.current_difficulty:
-            cls.current_difficulty = min(cls.current_difficulty + cls.cfg.step_limit, cls.cfg.max_difficulty)
-        elif new_difficulty < cls.current_difficulty:
-            cls.current_difficulty = max(cls.current_difficulty - cls.cfg.step_limit, cls.cfg.min_difficulty)
-        # else keep as is
 
-    @classmethod
-    def _calculate_difficulty(cls) -> int:
-        avg = cls._avg_time()
-        if avg is None:
-            return cls.current_difficulty
-        # If average below min_time -> target one step up; if above max_time -> one step down; else keep
-        if avg < cls.cfg.min_time:
-            return min(cls.cfg.max_difficulty, cls.current_difficulty + 1)
-        if avg > cls.cfg.max_time:
-            return max(cls.cfg.min_difficulty, cls.current_difficulty - 1)
-        return cls.current_difficulty
+        avg_time = cls._avg_time()
+        if avg_time is None:
+            return
+
+        # Granular adjustment by ratio
+        # new_target = old_target * (actual_time / expected_time)
+        ratio = avg_time / cls.cfg.target_time
+
+        # Clamp adjustment factor
+        if ratio < 0.25:
+            ratio = 0.25
+        if ratio > 4.0:
+            ratio = 4.0
+
+        new_target = int(cls.current_difficulty * ratio)
+
+        # Clamp to valid range
+        if new_target > MAX_TARGET:
+            new_target = MAX_TARGET
+        if new_target < 1:
+            new_target = 1
+
+        cls.current_difficulty = new_target
 
     @classmethod
     def _avg_time(cls) -> Optional[float]:

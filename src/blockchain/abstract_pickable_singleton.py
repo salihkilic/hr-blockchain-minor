@@ -40,7 +40,7 @@ class AbstractPickableSingleton(AbstractSingleton):
         """Save the entire object to disk."""
         instance = cls.get_instance()
         # Ensure target directory exists
-        file_path = cls._fs_service.get_data_file_path(f"{cls.__name__.lower()}.pkl")
+        file_path = cls._fs_service.get_data_file_path(f"{cls.__name__.lower()}.pkl", create_if_missing=True)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "wb") as f:
             pickle.dump(instance, cast(Any, f))

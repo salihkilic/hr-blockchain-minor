@@ -1,6 +1,7 @@
 import unittest
+import os
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -8,14 +9,43 @@ from blockchain.ledger import Ledger
 from blockchain import Pool
 from exceptions.mining import InvalidBlockException
 from models import Block, User, Transaction
-from services import FileSystemService, InitializationService
+from services import FileSystemService, InitializationService, NetworkingService, NodeFileSystemService
 
 
 class TestMining(unittest.TestCase):
 
-    @patch("services.filesystem_service.FileSystemService.get_data_root", side_effect=FileSystemService.get_temp_data_root)
-    def setUp(self, mock_get_data_root):
+    def setUp(self):
+        # Patch FileSystemService
+        self.fs_patcher = patch("services.filesystem_service.FileSystemService.get_data_root", side_effect=FileSystemService.get_temp_data_root)
+        self.mock_get_data_root = self.fs_patcher.start()
+        self.addCleanup(self.fs_patcher.stop)
+
+        # Patch NodeFileSystemService.get_data_root
+        def get_node_temp_root(self_instance=None, create_if_missing=False):
+            root = os.path.join(FileSystemService.get_temp_data_root(), "node_data")
+            if create_if_missing and not os.path.exists(root):
+                os.makedirs(root)
+            return root
+
+        self.nfs_patcher = patch("services.node_filesystem_service.NodeFileSystemService.get_data_root", side_effect=get_node_temp_root)
+        self.mock_node_get_data_root = self.nfs_patcher.start()
+        self.addCleanup(self.nfs_patcher.stop)
+
+        # Patch NetworkingService.get_instance
+        self.ns_patcher = patch("services.networking_service.NetworkingService.get_instance")
+        self.mock_get_instance = self.ns_patcher.start()
+        self.mock_ns = MagicMock()
+        self.mock_get_instance.return_value = self.mock_ns
+        self.addCleanup(self.ns_patcher.stop)
+
+        # Clean state
         FileSystemService.clear_temp_data_root()
+
+        Ledger.destroy_instance()
+        Pool.destroy_instance()
+        # NetworkingService.destroy_instance() # Not needed as we mock get_instance
+        NodeFileSystemService._node_data_directory = None
+
         InitializationService.initialize_application()
 
     @pytest.mark.integration
@@ -81,8 +111,8 @@ class TestMining(unittest.TestCase):
             genesis.timestamp = (gen_ts - timedelta(seconds=181)).isoformat()
 
         # Keep mining difficulty fixed and prevent ramp-up during this test
-        from services.difficulty_service import DifficultyService
-        with patch.object(DifficultyService, "current_difficulty", 1), \
+        from services.difficulty_service import DifficultyService, MAX_TARGET
+        with patch.object(DifficultyService, "current_difficulty", MAX_TARGET), \
              patch.object(DifficultyService, "update_time_to_mine", autospec=True) as upd_mock:
             upd_mock.return_value = None
 

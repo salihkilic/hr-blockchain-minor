@@ -1,8 +1,10 @@
 class InitializationService:
 
     @classmethod
-    def initialize_application(cls, node_number: int):
+    def initialize_application(cls, node_number: int = 1):
         from services import FileSystemService, NodeFileSystemService
+        if NodeFileSystemService._node_data_directory is None:
+            NodeFileSystemService.set_node_data_directory_by_number(node_number)
         filesystem_service = FileSystemService()
         filesystem_service.initialize_data_files()
         node_filesystem_service = NodeFileSystemService()
@@ -56,4 +58,4 @@ class InitializationService:
     @classmethod
     def exit_with_error_message(cls, message: str):
         print(f"\n\033[91m{message}\033[0m\n")
-        exit(1)
+        raise RuntimeError(message)
