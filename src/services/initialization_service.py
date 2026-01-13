@@ -50,10 +50,22 @@ class InitializationService:
             lambda payload, _: Ledger.get_instance().handle_network_validation(payload)
         )
 
+        NetworkingService.get_instance().register_handler(
+            NetworkingService.BLOCK_SYNC_REQUEST_TOPIC,
+            lambda payload, _: Ledger.get_instance().handle_network_sync_request(payload)
+        )
+
+        NetworkingService.get_instance().register_handler(
+            NetworkingService.TX_POOL_REQUEST_TOPIC,
+            lambda payload, _: Pool.get_instance().handle_network_pool_sync_request(payload)
+        )
+
         from blockchain import Pool
         Pool.get_instance()
         from blockchain import Ledger
         Ledger.get_instance()
+
+
 
     @classmethod
     def exit_with_error_message(cls, message: str):

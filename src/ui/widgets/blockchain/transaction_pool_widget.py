@@ -5,7 +5,8 @@ from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Label, Rule, Button, Static, ListView, ListItem, Collapsible, Markdown
 
-from blockchain import Pool
+from blockchain import Pool, Ledger
+from events import BlockAddedFromNetworkEvent
 from models import Transaction
 from services.user_service import UserService
 from .transaction_listing_widget import TransactionListingWidget

@@ -249,6 +249,20 @@ class Ledger(AbstractPickableSingleton, Subscribable):
             return
         ValidationAddedFromNetworkEvent.dispatch()
 
+    def handle_network_sync_request(self, request_data: dict):
+        """ Handle a block sync request from the network. """
+        after_number = request_data['after_number']
+        logging.debug(f"Received block sync request after block number {after_number}")
+        block = self.get_block_by_number(after_number + 1, True)
+        if block is None:
+            logging.debug("No block found to send for sync request.")
+            return
+        logging.debug(f"Sending block #{block.number} for sync request.")
+        NetworkingService.get_instance().broadcast_new_block(
+            block_number=block.number,
+            block_payload=block.to_dict()
+        )
+
     def _finalize_accept(self, block: Block) -> None:
         block.status = BlockStatus.ACCEPTED
         # Move block into chain
