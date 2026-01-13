@@ -2,7 +2,7 @@ import asyncio
 
 from textual.app import App
 
-from events import BlockAddedFromNetworkEvent, TransactionAddedFromNetworkEvent
+from events import BlockAddedFromNetworkEvent, TransactionAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
 from services import StartupService, NetworkingService
 
 
@@ -38,7 +38,7 @@ class GoodchainApp(App):
             after_number=latest_block.number if latest_block else -1,
         )
 
-        # NetworkingService.get_instance().request_pool_snapshot()
+        NetworkingService.get_instance().request_pool_snapshot()
 
         BlockAddedFromNetworkEvent.subscribe(lambda _: self.notify(
             title='Network event',
@@ -48,6 +48,11 @@ class GoodchainApp(App):
         TransactionAddedFromNetworkEvent.subscribe(lambda _: self.notify(
             title='Network event',
             message='A transaction was received from the network and added to the pool.'
+        ))
+
+        ValidationAddedFromNetworkEvent.subscribe(lambda _: self.notify(
+            title='Network event',
+            message='A validation was received from the network and added to the ledger.'
         ))
 
     def on_shutdown(self) -> None:
