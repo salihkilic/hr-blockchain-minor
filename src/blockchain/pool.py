@@ -27,6 +27,8 @@ class Pool(AbstractPickableSingleton, Subscribable):
         cls._call_subscribers(None)
 
     def mark_transaction_for_block(self, transaction: Transaction) -> None:
+        if transaction in self.get_instance()._transactions_marked_for_block:
+            return
         self.get_instance()._transactions_marked_for_block.append(transaction)
         self._save()
 
