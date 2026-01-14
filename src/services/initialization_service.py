@@ -60,6 +60,12 @@ class InitializationService:
             lambda payload, _: Pool.get_instance().handle_network_pool_sync_request(payload)
         )
 
+
+        NetworkingService.get_instance().register_handler(
+            NetworkingService.VALIDATION_REQUEST_TOPIC,
+            lambda payload, _: Ledger.get_instance().handle_validation_sync_request(payload)
+        )
+
         from blockchain import Pool
         Pool.get_instance()
         from blockchain import Ledger

@@ -2,8 +2,10 @@ import asyncio
 
 from textual.app import App
 
-from events import BlockAddedFromNetworkEvent, TransactionAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
-from services import StartupService, NetworkingService
+from events import BlockAddedFromNetworkEvent, TransactionAddedFromNetworkEvent, ValidationAddedFromNetworkEvent, \
+    LoginValidationCompletedEvent
+from services import StartupService, NetworkingService, CatchupService
+from services.user_service import UserService
 
 
 class GoodchainApp(App):
@@ -34,11 +36,17 @@ class GoodchainApp(App):
 
         from blockchain import Ledger
         latest_block = Ledger.get_instance().get_latest_block()
-        NetworkingService.get_instance().request_next_block(
-            after_number=latest_block.number if latest_block else -1,
-        )
 
-        NetworkingService.get_instance().request_pool_snapshot()
+        catchup_service = CatchupService()
+        catchup_service.request_block_catchup(
+            after_number=latest_block.number if latest_block else -1
+        )
+        catchup_service.request_pool_catchup()
+        catchup_service.request_validation_catchup()
+
+        catchup_service.volunteer_block_catchup()
+        catchup_service.volunteer_pool_catchup()
+        catchup_service.volunteer_validation_catchup()
 
         BlockAddedFromNetworkEvent.subscribe(lambda _: self.notify(
             title='Network event',
