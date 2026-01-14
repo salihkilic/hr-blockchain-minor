@@ -254,10 +254,13 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         validation_flag = ValidationFlag.from_dict(validation_data)
 
         pending_block = self._pending_blocks.get(block_hash)
-        if pending_block is not None:
-            if any(vf.validator == validation_flag.validator for vf in pending_block.validators):
-                logging.debug("Ignoring duplicate validation from %s for block %s", validation_flag.validator, block_hash)
-                return
+        if pending_block is None:
+            logging.debug("No pending block found for validation received from network for block %s", block_hash)
+            return
+
+        if any(vf.validator == validation_flag.validator for vf in pending_block.validators):
+            logging.debug("Ignoring duplicate validation from %s for block %s", validation_flag.validator, block_hash)
+            return
 
         try:
             self.add_validation_flag(
