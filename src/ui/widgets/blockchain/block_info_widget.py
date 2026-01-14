@@ -48,6 +48,9 @@ class BlockInfoWidget(Widget):
             .block__title--genesis {
                 background: ansi_blue 20%;
             }
+            .block__title--hash {
+                background: lightyellow 20%;
+            }
         """
 
     visible_block: Block = reactive(None, recompose=True)
@@ -93,6 +96,10 @@ class BlockInfoWidget(Widget):
         children.append(
             Label(f"Block nr: {self.visible_block.number} / {total_block_count}", classes="block__title") if self.visible_block.number > 0 else Label(
                 f"Genesis Block", classes="block__title block__title--genesis"),
+        )
+
+        children.append(
+            Label(f"{self.visible_block.calculated_hash}", classes="block__title block__title--hash"),
         )
 
         if self.visible_block.status == BlockStatus.PENDING:

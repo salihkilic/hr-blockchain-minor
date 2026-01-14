@@ -3,7 +3,7 @@ import asyncio
 from textual.app import App
 
 from events import BlockAddedFromNetworkEvent, TransactionAddedFromNetworkEvent, ValidationAddedFromNetworkEvent, \
-    LoginValidationCompletedEvent
+    LoginValidationCompletedEvent, GenesisBlockAddedFromNetworkEvent
 from services import StartupService, NetworkingService, CatchupService
 from services.user_service import UserService
 
@@ -39,7 +39,7 @@ class GoodchainApp(App):
 
         catchup_service = CatchupService()
         catchup_service.request_block_catchup(
-            after_number=latest_block.number if latest_block else -1
+            after_number=latest_block.number if latest_block and latest_block.number != 0 else -1
         )
         catchup_service.request_pool_catchup()
         catchup_service.request_validation_catchup()
@@ -51,6 +51,12 @@ class GoodchainApp(App):
         BlockAddedFromNetworkEvent.subscribe(lambda _: self.notify(
             title='Network event',
             message='A block was received from the network and added to the ledger.'
+        ))
+
+        GenesisBlockAddedFromNetworkEvent.subscribe(lambda _: self.notify(
+            title='Network event',
+            message='The genesis block was received from the network and added to the ledger.',
+            severity="warning"
         ))
 
         TransactionAddedFromNetworkEvent.subscribe(lambda _: self.notify(

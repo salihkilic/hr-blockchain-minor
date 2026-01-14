@@ -5,7 +5,7 @@ from textual import log
 
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
-from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
+from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent, GenesisBlockAddedFromNetworkEvent
 from models import Block
 from models.block import BlockStatus, ValidationFlag
 from exceptions.mining import InvalidBlockException
@@ -101,7 +101,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         for idx, block in enumerate(chain):
             # Status rules
             if block.number == 0:
-                if block.status not in (BlockStatus.GENESIS,):
+                if block.status == BlockStatus.GENESIS:
                     errors.append(f"Genesis block has invalid status: {block.status}.")
             else:
                 if block.status != BlockStatus.ACCEPTED:
@@ -175,6 +175,32 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         block_data = request_data['block_data']
         logging.debug("Received network block payload: %s", {k: block_data.get(k) for k in (list(block_data.keys())[:10])} if isinstance(block_data, dict) else block_data)
         block = Block.from_dict(block_data)
+
+        if block.calculated_hash in self._blocks or block.calculated_hash in self._pending_blocks:
+            logging.debug("Ignoring duplicate block received from network: %s", block.calculated_hash)
+            return
+
+        if block.number == 0:
+
+            if len(self._blocks) > 1:
+                logging.info("Ignoring genesis block received from network: local chain already has more than just genesis.")
+                return
+
+            local_genesis = self.get_block_by_number(0)
+            if local_genesis is None or local_genesis.calculated_hash != block.calculated_hash:
+                logging.info("Replacing local genesis block with network genesis block.")
+                self._blocks = {}
+                self._blocks[block.calculated_hash] = block
+                self._latest_block = block
+                self._save()
+
+                GenesisBlockAddedFromNetworkEvent.dispatch()
+
+                NetworkingService.get_instance().request_next_block(
+                    after_number=block.number,
+                )
+            return
+
         try:
             self.submit_block(block, from_network=True)
         except InvalidBlockException as e:
