@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Deque, Optional
 from collections import deque
@@ -12,14 +13,14 @@ MAX_TARGET = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
 @dataclass
 class DifficultyConfig:
-    target_time: float = 15.0       # seconds (ideal time to mine a block)
-    window_size: int = 5            # number of recent samples to average
-    default_difficulty: int = MAX_TARGET  # Starting difficulty (target). Max = Easiest.
-
+    target_time: float = 15       # seconds (ideal time to mine a block)
+    window_size: int = 10            # number of recent samples to average
+    # Starting difficulty (target). Max_Target = Easiest. Default is halfway.
+    default_difficulty: int = 0xd3d3340d5bc9a0000000000000000000000000000000000000000000000
 
 @dataclass
 class DifficultyState:
-    times: Deque[float] = field(default_factory=lambda: deque(maxlen=5))
+    times: Deque[float] = field(default_factory=lambda: deque(maxlen=10))
 
 
 class DifficultyService:
@@ -47,10 +48,10 @@ class DifficultyService:
         ratio = avg_time / cls.cfg.target_time
 
         # Clamp adjustment factor
-        if ratio < 0.25:
-            ratio = 0.25
-        if ratio > 4.0:
-            ratio = 4.0
+        if ratio < 0.95:
+            ratio = 0.95
+        if ratio > 1.05:
+            ratio = 1.05
 
         new_target = int(cls.current_difficulty * ratio)
 
@@ -60,6 +61,7 @@ class DifficultyService:
         if new_target < 1:
             new_target = 1
 
+        logging.debug(f"Old Target: {cls.current_difficulty} | New target: {new_target} | Ratio: {ratio:.4f} | Avg Time: {avg_time:.2f}s")
         cls.current_difficulty = new_target
 
     @classmethod
@@ -67,3 +69,4 @@ class DifficultyService:
         if not cls.state.times:
             return None
         return sum(cls.state.times) / len(cls.state.times)
+
