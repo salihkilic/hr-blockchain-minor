@@ -17,6 +17,7 @@ class NetworkingService(Subscribable, AbstractSingleton):
 
     # Block validation related topics
     VALIDATION_BROADCAST_TOPIC = "validations.broadcast"
+    VALIDATION_REQUEST_TOPIC = "validations.request"
 
     # Transaction pool related topics
     TX_POOL_REQUEST_TOPIC = "transactions.pool.request"
@@ -77,8 +78,10 @@ class NetworkingService(Subscribable, AbstractSingleton):
         # Truncate long messages in logs to keep output readable
         logging.debug(f"Broadcasting on topic '{topic}': {message}")
         if topic:
+            logging.debug(f"Broadcasting message on topic '{topic}': {message[:100]}{'...' if len(message) > 100 else ''}")
             self.publisher.send_string(f"{topic} {message}")
         else:
+            logging.debug(f"Broadcasting message with no topic: {message[:100]}{'...' if len(message) > 100 else ''}")
             self.publisher.send_string(message)
 
     def _broadcast_json(self, topic: str, payload: dict[str, Any]) -> None:
@@ -110,6 +113,10 @@ class NetworkingService(Subscribable, AbstractSingleton):
             "validation_data": validation_payload,
             "block_hash": block_hash,
         })
+
+    def request_validation_snapshot(self) -> None:
+        logging.debug("Requesting transaction pool snapshot")
+        self.broadcast("{}", topic=self.VALIDATION_REQUEST_TOPIC)
 
     # -------- Transaction pool helpers (messaging only) --------
     def request_pool_snapshot(self) -> None:

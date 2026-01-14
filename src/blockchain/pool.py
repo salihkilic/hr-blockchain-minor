@@ -5,6 +5,7 @@ from textual import log
 
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
+from events import TransactionAddedFromNetworkEvent
 from exceptions.mining import InvalidBlockException
 from models import Transaction, Block
 from models.enum.transaction_type import TransactionType
@@ -27,6 +28,8 @@ class Pool(AbstractPickableSingleton, Subscribable):
         cls._call_subscribers(None)
 
     def mark_transaction_for_block(self, transaction: Transaction) -> None:
+        if transaction in self.get_instance()._transactions_marked_for_block:
+            return
         self.get_instance()._transactions_marked_for_block.append(transaction)
         self._save()
 
@@ -155,6 +158,10 @@ class Pool(AbstractPickableSingleton, Subscribable):
         log(f"Received new transaction from network: {request_data}")
         logging.debug("Received network transaction payload: %s", {k: transaction_data.get(k) for k in (list(transaction_data.keys())[:10])} if isinstance(transaction_data, dict) else transaction_data)
         transaction = Transaction.from_dict(transaction_data)
+        for tx in self.get_instance()._transactions:
+            if tx.hash == transaction.hash:
+                logging.debug("Transaction already exists in pool, ignoring.")
+                return
         try:
             self.add_transaction(transaction, raise_exception=True, broadcast_to_network=False)
         except Exception as e:
@@ -162,6 +169,16 @@ class Pool(AbstractPickableSingleton, Subscribable):
             logging.exception("Failed to add transaction received from network: %s", e)
             return
         self._call_subscribers(None)
+        TransactionAddedFromNetworkEvent.dispatch()
+
+    def handle_network_pool_sync_request(self, request_data: dict) -> None:
+        """ Handle a new transaction received from the network. """
+        logging.debug("Received transaction pool sync request from network: %s", request_data)
+        for tx in self.get_instance()._transactions:
+            logging.debug("Sending transaction to requester: %s", {k: tx.to_dict().get(k) for k in (list(tx.to_dict().keys())[:10])} if isinstance(tx.to_dict(), dict) else tx.to_dict())
+            NetworkingService.get_instance().broadcast_new_transaction(
+                transaction_payload=tx.to_dict()
+            )
 
     @classmethod
     def load(cls) -> Optional["AbstractPickableSingleton"]:

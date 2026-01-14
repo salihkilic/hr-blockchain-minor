@@ -5,7 +5,7 @@ from textual import log
 
 from base.subscribable import Subscribable
 from blockchain.abstract_pickable_singleton import AbstractPickableSingleton
-from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent
+from events import BlockAddedFromNetworkEvent, ValidationAddedFromNetworkEvent, GenesisBlockAddedFromNetworkEvent
 from models import Block
 from models.block import BlockStatus, ValidationFlag
 from exceptions.mining import InvalidBlockException
@@ -101,7 +101,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         for idx, block in enumerate(chain):
             # Status rules
             if block.number == 0:
-                if block.status not in (BlockStatus.GENESIS,):
+                if block.status == BlockStatus.GENESIS:
                     errors.append(f"Genesis block has invalid status: {block.status}.")
             else:
                 if block.status != BlockStatus.ACCEPTED:
@@ -131,7 +131,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
     def has_pending_blocks(self) -> bool:
         return len(self._pending_blocks) > 0
 
-    def submit_block(self, block: Block) -> None:
+    def submit_block(self, block: Block, from_network: bool = False) -> None:
         # Do not allow submitting a new block while another is pending validation
         if self.has_pending_blocks():
             raise InvalidBlockException("Cannot submit new block: a previous block is still pending validation.")
@@ -161,7 +161,8 @@ class Ledger(AbstractPickableSingleton, Subscribable):
 
         # Fairness validation against pool
         from blockchain import Pool
-        Pool.get_instance().validate_transaction_in_block_for_fairness(block)
+        if not from_network:
+            Pool.get_instance().validate_transaction_in_block_for_fairness(block)
 
         Pool.get_instance().remove_transactions(block.transactions, True)
 
@@ -174,13 +175,54 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         block_data = request_data['block_data']
         logging.debug("Received network block payload: %s", {k: block_data.get(k) for k in (list(block_data.keys())[:10])} if isinstance(block_data, dict) else block_data)
         block = Block.from_dict(block_data)
+
+        if block.calculated_hash in self._blocks or block.calculated_hash in self._pending_blocks:
+            logging.debug("Ignoring duplicate block received from network: %s", block.calculated_hash)
+            return
+
+        if block.number == 0:
+
+            if len(self._blocks) > 1:
+                logging.info("Ignoring genesis block received from network: local chain already has more than just genesis.")
+                return
+
+            local_genesis = self.get_block_by_number(0)
+            if local_genesis is None or local_genesis.calculated_hash != block.calculated_hash:
+                logging.info("Replacing local genesis block with network genesis block.")
+                self._blocks = {}
+                self._blocks[block.calculated_hash] = block
+                self._latest_block = block
+                self._save()
+
+                GenesisBlockAddedFromNetworkEvent.dispatch()
+
+                NetworkingService.get_instance().request_next_block(
+                    after_number=block.number,
+                )
+            return
+
         try:
-            self.submit_block(block)
+            self.submit_block(block, from_network=True)
         except InvalidBlockException as e:
             # Log invalid blocks from the network for observability but don't re-raise
             logging.exception("Failed to add block received from network: %s", e)
             return
+
+        # TODO: Unify duplicate logic with add_validation_flag
+        valid_count = sum(1 for vf in block.validators if vf.valid)
+        invalid_count = sum(1 for vf in block.validators if not vf.valid)
+
+        if valid_count >= 3 and invalid_count < 3:
+            self._finalize_accept(block)
+        elif invalid_count >= 3 and valid_count < 3:
+            self._finalize_reject(block)
+        self._save()
+
         BlockAddedFromNetworkEvent.dispatch()
+
+        NetworkingService.get_instance().request_next_block(
+            after_number=block.number,
+        )
 
     def submit_network_block(self, block: Block) -> None:
         """ Handle broadcasting a new block to the network. """
@@ -236,6 +278,16 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         block_hash = request_data['block_hash']
         logging.debug("Received network validation payload: %s for block %s", {k: validation_data.get(k) for k in (list(validation_data.keys())[:10])} if isinstance(validation_data, dict) else validation_data, block_hash)
         validation_flag = ValidationFlag.from_dict(validation_data)
+
+        pending_block = self._pending_blocks.get(block_hash)
+        if pending_block is None:
+            logging.debug("No pending block found for validation received from network for block %s", block_hash)
+            return
+
+        if any(vf.validator == validation_flag.validator for vf in pending_block.validators):
+            logging.debug("Ignoring duplicate validation from %s for block %s", validation_flag.validator, block_hash)
+            return
+
         try:
             self.add_validation_flag(
                 block_hash=block_hash,
@@ -248,6 +300,34 @@ class Ledger(AbstractPickableSingleton, Subscribable):
             logging.exception("Failed to add validation received from network: %s", e)
             return
         ValidationAddedFromNetworkEvent.dispatch()
+
+    def handle_network_sync_request(self, request_data: dict):
+        """ Handle a block sync request from the network. """
+        after_number = request_data['after_number']
+        logging.debug(f"Received block sync request after block number {after_number}")
+        block = self.get_block_by_number(after_number + 1, True)
+        if block is None:
+            logging.debug("No block found to send for sync request.")
+            return
+        logging.debug(f"Sending block #{block.number} for sync request.")
+        NetworkingService.get_instance().broadcast_new_block(
+            block_number=block.number,
+            block_payload=block.to_dict()
+        )
+
+    def handle_validation_sync_request(self, request_data: dict):
+        """ Handle a validation sync request from the network. Broadcast all validations for pending block. """
+        logging.debug("Received validation sync request")
+        pending_block = self.get_pending_block()
+        if pending_block is None:
+            logging.debug("No pending block found to send validations for sync request.")
+            return
+        for validation_flag in pending_block.validators:
+            logging.debug(f"Sending validation from {validation_flag.validator} for sync request.")
+            NetworkingService.get_instance().broadcast_new_validation(
+                validation_payload=validation_flag.to_dict(),
+                block_hash=pending_block.calculated_hash
+            )
 
     def _finalize_accept(self, block: Block) -> None:
         block.status = BlockStatus.ACCEPTED

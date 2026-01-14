@@ -1,98 +1,42 @@
-# Networking & Synchronization Flows
+# Network catch-up
 
-## Transaction Creation & Propagation
+> For the network catch-up for the large part the existing "entrypoints" are used, that are also used in the live sync.
 
-1. **Transaction creation (Node A)**
-   1. A user creates a transaction on Node A.
-   2. Node A validates the transaction locally.
-   3. The transaction is added to Node A’s local transaction pool.
+## Request flow
 
-2. **Transaction broadcast (Node A)**
-   1. Node A broadcasts the transaction.
-   2. Topic: `transactions.broadcast`
-   3. Payload contains the serialized transaction data.
+### Blocks
 
-3. **Transaction reception (Node B)**
-   1. Node B receives the `transactions.broadcast` message.
-   2. Node B parses the payload.
-   3. Node B validates the transaction.
+1. A - Request block after N
+2. B - Sends block after N (including validations)
+3. A - Validates and adds block to ledger (pending or accepted)
+    1. Invalid blocks are ignored
+4. A - Requests block after N + 1
+5. Step 2 continues until B has no more blocks to send
 
-4. **Transaction storage (Node B)**
-   1. If valid, the transaction is added to Node B’s local transaction pool.
-   2. If invalid, the transaction is ignored or flagged.
+> Transaction fairness is not checked on the side of A because the pool might not be intact anymore
 
----
+### Transactions
 
-## Transaction Pool Synchronization (Late Join / Recovery)
+1. A - Request for pool sync
+2. B - Sends all transactions in pool, one by one
+3. A - Receives all the transactions
+    1. Known transactions are ignored
+    2. Unknown transactions are validated
+        1. Valid transaction are added
+        2. Invalid transactions are ignored
 
-1. **Startup or desync detection (Node B)**
-   1. Node B starts or detects that its pool may be outdated.
+### Validations
 
-2. **Pool request (Node B)**
-   1. Node B sends a pool snapshot request.
-   2. Topic: `transactions.pool.request`.
+> To prevent a situations where nodes have the same block pending individual validations can be synced
 
-3. **Pool response (Node A or peer)**
-   1. A peer receives the request.
-   2. The peer responds with the full transaction pool.
-   3. Topic: `transactions.pool.response`.
-   4. Payload contains a list of transactions.
+1. A - Request for validation sync
+2. B - Sends all validations for pending block, one by one
+3. A - Receives all validations
+    1. Relevant validations are added to the pending block
+    2. Irrelevant validations are ignored
 
-4. **Pool rebuild (Node B)**
-   1. Node B validates all received transactions.
-   2. Valid transactions are added to the local pool.
-   3. Invalid transactions are discarded.
+## Volunteering information
 
----
-
-## Block Mining & Propagation
-
-1. **Block mining (Node A)**
-   1. Node A selects valid transactions from its local pool.
-   2. Node A mines a new block.
-   3. The block is validated locally.
-
-2. **Block broadcast (Node A)**
-   1. Node A broadcasts the new block.
-   2. Topic: `blocks.broadcast`.
-   3. Payload contains the block number and block data.
-
-3. **Block reception (Node B)**
-   1. Node B receives the `blocks.broadcast` message.
-   2. Node B validates the block and its transactions.
-
-4. **Ledger update (Node B)**
-   1. If valid, the block is appended to Node B’s local ledger.
-   2. Transactions included in the block are removed from Node B’s local pool.
-
----
-
-## Ledger Synchronization (Offline Node Catch-Up)
-
-1. **Out-of-sync detection (Node B)**
-   1. Node B detects missing blocks in its local ledger.
-
-2. **Block request (Node B)**
-   1. Node B requests the next block after its latest known block.
-   2. Topic: `blocks.sync.request`.
-   3. Payload includes the last known block number.
-
-3. **Block response (Node A or peer)**
-   1. A peer receives the request.
-   2. The peer responds with the next block.
-   3. Topic: `blocks.sync.response`.
-
-4. **Block application (Node B)**
-   1. Node B validates the received block.
-   2. If valid, the block is appended to the local ledger.
-   3. Steps 2–4 repeat until the ledger is fully synchronized.
-
----
-
-## Design Assumptions
-
-1. Broadcast messages are best-effort and may be missed.
-2. Nodes may go offline at any time.
-3. Explicit request/response synchronization ensures eventual consistency.
-4. Validation and consensus logic are implemented outside the networking layer.
-5. The networking layer is responsible only for message transport and routing.
+To make nodes sync when a ahead node comes online after a behind node. The nodes volunteer (broadcast) all the
+information from steps `2` once at startup, as if there was a request. The behind nodes will receive the required info
+and ask for more where necessary.
