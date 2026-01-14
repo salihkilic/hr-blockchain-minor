@@ -101,7 +101,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
         for idx, block in enumerate(chain):
             # Status rules
             if block.number == 0:
-                if block.status == BlockStatus.GENESIS:
+                if block.status != BlockStatus.GENESIS:
                     errors.append(f"Genesis block has invalid status: {block.status}.")
             else:
                 if block.status != BlockStatus.ACCEPTED:
@@ -178,6 +178,9 @@ class Ledger(AbstractPickableSingleton, Subscribable):
 
         if block.calculated_hash in self._blocks or block.calculated_hash in self._pending_blocks:
             logging.debug("Ignoring duplicate block received from network: %s", block.calculated_hash)
+            NetworkingService.get_instance().request_next_block(
+                after_number=block.number,
+            )
             return
 
         if block.number == 0:
@@ -190,6 +193,7 @@ class Ledger(AbstractPickableSingleton, Subscribable):
             if local_genesis is None or local_genesis.calculated_hash != block.calculated_hash:
                 logging.info("Replacing local genesis block with network genesis block.")
                 self._blocks = {}
+                block.status = BlockStatus.GENESIS
                 self._blocks[block.calculated_hash] = block
                 self._latest_block = block
                 self._save()

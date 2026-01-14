@@ -15,7 +15,7 @@ class CatchupService:
     def volunteer_block_catchup(self) -> None:
         from blockchain import Ledger
         Ledger.get_instance().handle_network_sync_request({
-            "after_number": -1,
+            "after_number": 0,
         })
 
     def volunteer_pool_catchup(self) -> None:
