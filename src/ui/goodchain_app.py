@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from textual.app import App
 
@@ -88,6 +89,13 @@ class GoodchainApp(App):
 
         if user.public_key in validators:
             return  # User has already validated this block
+
+        logging.debug("Starting new block validation")
+
+        logging.debug(f"Current screen count {len(self.screen_stack)}")
+
+        if len(self.screen_stack) > 1:
+            self.pop_screen()
 
         self.push_screen(BlockValidationScreen(close_after_validation=True))
 
