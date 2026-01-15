@@ -44,9 +44,10 @@ class BlockValidationScreen(Screen):
         }
     """
 
-    def __init__(self):
+    def __init__(self, close_after_validation: bool = False):
         super().__init__()
         self.timer = None
+        self.close_after_validation = close_after_validation
 
     def compose(self) -> ComposeResult:
         yield Vertical(
@@ -68,7 +69,7 @@ class BlockValidationScreen(Screen):
                 title="No pending block found",
                 message="There is no pending block to validate at this time. Skipping validation.",
                 alert_type=AlertType.INFO
-            ), callback=lambda: self.app.switch_screen(TransactionRemovalScreen())))
+            ), callback=lambda: self.next_screen()))
             return
 
         # Check if validator already validated the block
@@ -79,7 +80,7 @@ class BlockValidationScreen(Screen):
                 title="Block already validated",
                 message="You have already validated the pending block. Skipping validation.",
                 alert_type=AlertType.INFO
-            ), callback=lambda: self.app.switch_screen(TransactionRemovalScreen())))
+            ), callback=lambda: self.next_screen()))
             return
 
         if pending_block.miner_address == validator.address:
@@ -87,7 +88,7 @@ class BlockValidationScreen(Screen):
                 title="Validator is the miner",
                 message="You cannot validate a block that you have mined yourself. Skipping validation.",
                 alert_type=AlertType.WARNING
-            ), callback=lambda: self.app.switch_screen(TransactionRemovalScreen())))
+            ), callback=lambda: self.next_screen()))
             return
 
         self._validate_pending_block()
@@ -103,18 +104,21 @@ class BlockValidationScreen(Screen):
                 result = pending_block.validate(current_block)
 
                 if not result:
-                    validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
-                                                              False, 'Block could not be validated.')
+                    validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash,
+                                                                                validator.address,
+                                                                                False, 'Block could not be validated.')
                     raise InvalidBlockException("Pending block is invalid.")
 
                 if not result.valid:
                     # TODO Handle invalid transactions
-                    validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
-                                                              result.valid, '\n'.join(result.reasons))
+                    validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash,
+                                                                                validator.address,
+                                                                                result.valid, '\n'.join(result.reasons))
                     raise InvalidBlockException('\n'.join(result.reasons))
 
-                validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash, validator.address,
-                                                          result.valid)
+                validation_flag = Ledger.get_instance().add_validation_flag(pending_block.calculated_hash,
+                                                                            validator.address,
+                                                                            result.valid)
         except (InvalidBlockException, InvalidTransactionException) as e:
             from ui.screens.startup import TransactionRemovalScreen
             self.app.call_from_thread(
@@ -124,7 +128,7 @@ class BlockValidationScreen(Screen):
                     message=f"The block validation failed due to error:\n{e}",
                     alert_type=AlertType.WARNING,
                     dismissed_automatically=False
-                ), callback=lambda: self.app.switch_screen(TransactionRemovalScreen()))
+                ), callback=lambda: self.next_screen())
             )
             return
 
@@ -141,4 +145,11 @@ class BlockValidationScreen(Screen):
             title="Block validation successful",
             message="The pending block has been successfully validated.",
             alert_type=AlertType.SUCCESS
-        ), callback=lambda: self.app.switch_screen(TransactionRemovalScreen())))
+        ), callback=lambda: self.next_screen()))
+
+    def next_screen(self):
+        if self.close_after_validation:
+            self.app.pop_screen()
+        else:
+            from ui.screens.startup import TransactionRemovalScreen
+            self.app.switch_screen(TransactionRemovalScreen())

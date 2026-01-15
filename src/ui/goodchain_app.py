@@ -6,6 +6,7 @@ from events import BlockAddedFromNetworkEvent, TransactionAddedFromNetworkEvent,
     LoginValidationCompletedEvent, GenesisBlockAddedFromNetworkEvent
 from services import StartupService, NetworkingService, CatchupService
 from services.user_service import UserService
+from ui.screens.startup import BlockValidationScreen
 
 
 class GoodchainApp(App):
@@ -68,6 +69,29 @@ class GoodchainApp(App):
             title='Network event',
             message='A validation was received from the network and added to the ledger.'
         ))
+
+        BlockAddedFromNetworkEvent.subscribe(lambda _: self.validate_new_block())
+
+    def validate_new_block(self) -> None:
+        # Check if there is pending block that this user has not validated yet
+        from blockchain import Ledger
+
+        user = UserService.logged_in_user
+        if user is None:
+            return
+
+        pending_block = Ledger.get_instance().get_pending_block()
+        if pending_block is None:
+            return
+
+        validators = pending_block.validators
+
+        if user.public_key in validators:
+            return  # User has already validated this block
+
+        self.push_screen(BlockValidationScreen(close_after_validation=True))
+
+
 
     def on_shutdown(self) -> None:
         NetworkingService.get_instance().stop()
